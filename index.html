@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Containing the Optimizer</title>
+<meta name="description" content="Container, VM, confidential VM, enclave — one word, &ldquo;sandbox,&rdquo; has erased the distinctions between them, which is exactly how AI gets sold as secure and private. A field guide to what each primitive actually protects, and what it costs when it fails.">
+<link rel="canonical" href="https://rmhrisk.github.io/containing-the-optimizer/">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://rmhrisk.github.io/containing-the-optimizer/">
+<meta property="og:title" content="Containing the Optimizer">
+<meta property="og:description" content="One word, &ldquo;sandbox,&rdquo; has erased the distinctions between container, VM, confidential VM, and enclave — which is exactly how AI gets sold as secure and private. A field guide to what each primitive protects, and what it costs when it fails.">
+<meta property="og:image" content="https://rmhrisk.github.io/containing-the-optimizer/cheese-room.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="A room built entirely of Swiss cheese, holes on every wall, with a workstation in the middle — the wall is made of holes, and someone is working inside it anyway.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Containing the Optimizer">
+<meta name="twitter:description" content="One word, &ldquo;sandbox,&rdquo; has erased the distinctions between container, VM, confidential VM, and enclave. A field guide to what each primitive protects, and what it costs when it fails.">
+<meta name="twitter:image" content="https://rmhrisk.github.io/containing-the-optimizer/cheese-room.png">
+<script>document.documentElement.className+=" js";</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F7F6F2; --ink:#14181C; --muted:#5F646B; --rule:#DAD7CE; --rule2:#C4C0B4; --panel:#FFFFFF;
+  --steel:#33566B;
+  --rem-patch:#2F7D5A; --rem-comp:#A8770A; --rem-arch:#AD4227; --rem-root:#5B2A57;
+  --rem-patch-bg:#E7F1EC; --rem-comp-bg:#F6EEDC; --rem-arch-bg:#F6E5E0; --rem-root-bg:#EEE3ED;
+  --display:'Newsreader',Georgia,serif; --body:'Source Serif 4',Georgia,serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1.07rem;line-height:1.62;-webkit-font-smoothing:antialiased}
+a{color:var(--steel)}
+a:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.wrap{max-width:43rem;margin:0 auto;padding:0 1.25rem}
+.wide{max-width:60rem;margin:0 auto;padding:0 1.25rem}
+header.site{border-bottom:1px solid var(--rule);padding:.7rem 0;font-family:var(--mono);font-size:.76rem;letter-spacing:.03em}
+header.site .wrap{display:flex;justify-content:space-between;gap:1rem;max-width:60rem}
+header.site a{text-decoration:none;color:var(--muted)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(2.3rem,6vw,3.7rem);line-height:1.04;letter-spacing:-.018em;margin:2.6rem 0 .6rem}
+.subhead{font-family:var(--display);font-style:italic;font-weight:400;font-size:1.28rem;line-height:1.4;color:var(--muted);margin:0 0 1.6rem;max-width:34rem}
+.dateline{font-family:var(--mono);font-size:.74rem;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;margin:0 0 2rem}
+.part-head{font-family:var(--mono);font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--steel);margin:3.4rem 0 -.4rem;padding-top:1.6rem;border-top:2px solid var(--ink)}
+h2{font-family:var(--display);font-weight:700;font-size:1.72rem;line-height:1.14;margin:2.4rem 0 .8rem;letter-spacing:-.01em}
+h2 .snum{font-family:var(--mono);font-weight:500;font-size:1.05rem;color:var(--rem-arch);margin-right:.5rem;font-style:normal}
+h3{font-family:var(--display);font-weight:600;font-size:1.18rem;margin:1.8rem 0 .4rem}
+p{margin:0 0 1.1rem}
+em{font-style:italic}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+figure{margin:2.2rem 0}
+figcaption{font-family:var(--body);font-size:.92rem;font-style:italic;color:var(--muted);margin-top:.6rem;line-height:1.5}
+figure svg{width:100%;height:auto;display:block;background:var(--panel);border:1px solid var(--rule);border-radius:2px}
+.lesson{background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--rem-arch);padding:.9rem 1.15rem;margin:1.8rem 0}
+.closer{font-size:1.12rem;line-height:1.7;margin:2.4rem 0 1rem;padding-top:1.6rem;border-top:1px solid var(--rule)}
+.lesson .eyebrow{color:var(--rem-arch);display:block;margin-bottom:.3rem}
+.lesson p{margin:0;font-size:1rem}
+blockquote{margin:1.9rem 0;padding:.2rem 0 .2rem 1.3rem;border-left:3px solid var(--steel);font-family:var(--display);font-style:italic;font-weight:500;font-size:1.3rem;line-height:1.36;color:#20252B}
+blockquote p{margin:0 0 .6rem}
+blockquote p:last-child{margin:0}
+nav.toc{border:1px solid var(--rule);background:var(--panel);padding:1.1rem 1.4rem;margin:2.2rem 0;font-size:.94rem}
+nav.toc .eyebrow{display:block;margin-bottom:.5rem}
+nav.toc ul{margin:0;padding:0;list-style:none}
+nav.toc li{margin:.18rem 0}
+nav.toc li.part{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);margin-top:.7rem}
+nav.toc li.part:first-child{margin-top:0}
+nav.toc a{text-decoration:none;color:var(--ink)}
+nav.toc a:hover{text-decoration:underline}
+nav.toc .qn{font-family:var(--mono);font-size:.74rem;color:var(--muted);margin-right:.4rem}
+.smallnote{font-size:.9rem;color:var(--muted)}
+hr{border:0;border-top:1px solid var(--rule);margin:2.6rem 0}
+.limits{background:transparent;border-top:2px solid var(--ink);padding-top:1rem;margin-top:3rem}
+.limits h3{font-family:var(--display);font-size:1.15rem;margin:0 0 .6rem}
+.limits p{font-size:.97rem;color:#2A2F35}
+.srcs{font-size:.88rem}
+.srcs h3{font-family:var(--display);font-size:1.15rem;margin:2.4rem 0 .6rem}
+.srcs ol{padding-left:1.3rem}
+.srcs li{margin:.35rem 0}
+/* explorer */
+.ledger{display:flex;height:2.1rem;border:1px solid var(--rule);border-radius:2px;overflow:hidden;margin:.9rem 0 .4rem}
+.ledger div{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.72rem;color:#fff;min-width:2.4rem}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-bottom:1rem}
+.dot{display:inline-block;width:.6rem;height:.6rem;border-radius:50%;margin-right:.35rem}
+.controls{display:flex;flex-wrap:wrap;gap:.45rem;margin:1rem 0 .7rem}
+.chip{font-family:var(--mono);font-size:.74rem;border:1px solid var(--rule);background:var(--panel);border-radius:999px;padding:.32rem .78rem;cursor:pointer;color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip.rem-patch[aria-pressed="true"]{background:var(--rem-patch);border-color:var(--rem-patch)}
+.chip.rem-comp[aria-pressed="true"]{background:var(--rem-comp);border-color:var(--rem-comp)}
+.chip.rem-arch[aria-pressed="true"]{background:var(--rem-arch);border-color:var(--rem-arch)}
+.chip.rem-root[aria-pressed="true"]{background:var(--rem-root);border-color:var(--rem-root)}
+.controls select{font-family:var(--mono);font-size:.78rem;border:1px solid var(--rule);background:var(--panel);padding:.3rem .5rem;border-radius:2px}
+.count{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin:.2rem 0 .8rem}
+table.vx{width:100%;border-collapse:collapse;font-size:.88rem;background:var(--panel);border:1px solid var(--rule)}
+table.vx th{font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;text-align:left;color:var(--muted);border-bottom:1px solid var(--rule);padding:.55rem .6rem;background:var(--paper)}
+table.vx td{padding:.55rem .6rem;border-bottom:1px solid var(--rule);vertical-align:top}
+table.vx tr:target td{background:#FBF3D8}
+td.nm{font-weight:600;white-space:nowrap}
+td.nm .cve{display:block;font-family:var(--mono);font-weight:400;font-size:.68rem;color:var(--muted)}
+td.yr,td.pf{font-family:var(--mono);font-size:.76rem;white-space:nowrap}
+.tag{display:inline-block;font-family:var(--mono);font-size:.66rem;padding:.1rem .42rem;border-radius:2px;white-space:nowrap}
+.tag.patch{background:var(--rem-patch-bg);color:var(--rem-patch)}
+.tag.comp{background:var(--rem-comp-bg);color:#7A5A08}
+.tag.arch{background:var(--rem-arch-bg);color:var(--rem-arch)}
+.tag.root{background:var(--rem-root-bg);color:var(--rem-root)}
+.tag.ai{background:#E4EBF0;color:var(--steel)}
+.anchor{font-family:var(--mono);font-size:.7rem;text-decoration:none;color:var(--rule)}
+tr:hover .anchor{color:var(--steel)}
+/* scorecard */
+.sc{border:1px solid var(--rule);background:var(--panel);padding:1.3rem 1.4rem;margin:1.4rem 0}
+.sc h4{font-family:var(--display);font-size:1.05rem;margin:0 0 .2rem}
+.sc .qn{margin:1.1rem 0 .5rem;padding-top:1.1rem;border-top:1px solid var(--rule)}
+.sc .qn:first-of-type{border-top:0;padding-top:0}
+.sc .qtext{font-weight:600;font-size:.98rem;margin:0 0 .1rem}
+.sc .qsub{font-size:.85rem;color:var(--muted);margin:0 0 .5rem}
+.sc .opts{display:flex;flex-wrap:wrap;gap:.4rem}
+.sc .opts button{font-family:var(--body);font-size:.9rem;border:1px solid var(--rule);background:var(--paper);border-radius:2px;padding:.4rem .8rem;cursor:pointer;color:var(--ink)}
+.sc .opts button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sc-result{margin-top:1.4rem;padding-top:1.2rem;border-top:2px solid var(--ink)}
+.sc-verdict{display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;margin-bottom:.4rem}
+.sc-verdict .col{font-family:var(--mono);font-size:.72rem;padding:.2rem .6rem;border-radius:2px;letter-spacing:.03em}
+.sc-verdict h4{font-family:var(--display);font-size:1.2rem;margin:0}
+.sc-bar{display:flex;height:1.4rem;border:1px solid var(--rule);border-radius:2px;overflow:hidden;margin:.6rem 0}
+.sc-findings{font-size:.92rem;margin:.7rem 0 0;padding:0;list-style:none}
+.sc-findings li{padding:.35rem 0 .35rem 1.3rem;position:relative;border-bottom:1px solid var(--rule)}
+.sc-findings li::before{position:absolute;left:0;top:.35rem;font-family:var(--mono);font-size:.8rem}
+.sc-findings li.good::before{content:"\2713";color:var(--rem-patch)}
+.sc-findings li.warn::before{content:"\26A0";color:var(--rem-comp)}
+.sc-findings li.bad::before{content:"\2717";color:var(--rem-arch)}
+.sc-reset{margin-top:1rem;font-family:var(--mono);font-size:.74rem;background:none;border:1px solid var(--rule);border-radius:2px;padding:.3rem .7rem;cursor:pointer;color:var(--muted)}
+/* quiz */
+.quiz{border:1px solid var(--rule);background:var(--panel);padding:1.3rem 1.4rem;margin:1.4rem 0}
+.quiz .q{font-weight:600;margin:0 0 .6rem}
+.qz-head{display:flex;justify-content:space-between;gap:1rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;color:var(--muted);margin-bottom:.5rem}
+.qz-track{display:flex;gap:3px;margin-bottom:1.1rem}
+.qz-seg{flex:1;height:3px;background:var(--rule);transition:background .3s}
+.qz-seg.seg-cur{background:var(--ink)}
+.qz-seg.seg-r{background:var(--rem-patch)}
+.qz-seg.seg-p{background:var(--rem-comp)}
+.qz-verdict{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;padding:.45rem .7rem;margin:0 0 .8rem;border-left:3px solid}
+.qz-verdict.v-r{background:var(--rem-patch-bg);color:var(--rem-patch);border-color:var(--rem-patch)}
+.qz-verdict.v-p{background:var(--rem-comp-bg);color:var(--rem-comp);border-color:var(--rem-comp)}
+.qz-verdict.v-w{background:var(--rem-arch-bg);color:var(--rem-arch);border-color:var(--rem-arch)}
+.qz-question{font-weight:600;font-size:1.05rem;line-height:1.45;margin:0 0 .8rem}
+.quiz button.opt{display:block;width:100%;text-align:left;font-family:var(--body);font-size:.95rem;line-height:1.4;background:var(--paper);border:1px solid var(--rule);border-radius:2px;padding:.55rem .75rem;margin:.35rem 0;cursor:pointer;transition:border-color .2s,background .2s}
+.quiz button.opt:hover:not(:disabled){border-color:var(--ink);background:var(--panel)}
+.quiz button.opt:disabled{cursor:default;opacity:.94}
+.quiz button.opt.right{border-color:var(--rem-patch);background:var(--rem-patch-bg);box-shadow:inset 3px 0 0 var(--rem-patch)}
+.quiz button.opt.wrong{border-color:var(--rem-arch);background:var(--rem-arch-bg);box-shadow:inset 3px 0 0 var(--rem-arch)}
+.quiz .why{font-size:.9rem;line-height:1.5;color:#2A2F35;margin:.9rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--rule2);background:var(--paper)}
+.quiz .why.ex-r{border-left-color:var(--rem-patch);background:var(--rem-patch-bg)}
+.quiz .why.ex-p{border-left-color:var(--rem-comp);background:var(--rem-comp-bg)}
+.qz-card.qz-in{animation:qzin .28s ease}
+@keyframes qzin{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.qz-card.qz-in{animation:none}.qz-seg{transition:none}}
+.qz-act{font-family:var(--mono);font-size:.74rem;letter-spacing:.05em;background:var(--ink);color:var(--paper);border:1px solid var(--ink);border-radius:2px;padding:.45rem 1.1rem;margin-top:1rem;cursor:pointer}
+.qz-act:hover{background:#000}
+.qz-done{padding:.6rem 0 .2rem}
+.qz-big{font-family:var(--display);font-weight:700;font-size:3rem;line-height:1;margin:0 0 .4rem}
+.qz-win .qz-big{color:var(--rem-patch)}
+.qz-msg{color:var(--muted);margin:0 0 .4rem}
+footer{background:var(--ink);color:#C3C8CE;margin-top:3.2rem;font-size:.94rem}
+footer .wrap{max-width:53rem;padding:2.1rem 1.5rem 2.4rem}
+footer p{margin:0 0 .7rem}
+footer a{color:#8FB6CE}
+footer .smallnote{margin:0;font-size:.88rem;color:#98A0A8;line-height:1.6}
+footer .smallnote a{color:#7FA6BE}
+@media(max-width:640px){.hidecol{display:none}}
+.vx-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:640px){.vx-scroll{margin:0 -1.25rem;padding:0 1.25rem}table.vx{min-width:26rem}}
+
+/* ---- motion system ---- */
+html.js figure.diagram svg rect,html.js figure.diagram svg circle{opacity:0;transform:translateY(7px);transition:opacity .5s ease,transform .5s ease}
+html.js figure.diagram svg text,html.js figure.diagram svg polygon{opacity:0;transition:opacity .45s ease}
+html.js figure.diagram svg line,html.js figure.diagram svg polyline{opacity:0;stroke-dashoffset:1;transition:opacity .25s ease,stroke-dashoffset .7s ease}
+html.js figure.diagram svg line.anim,html.js figure.diagram svg polyline.anim{stroke-dasharray:1}
+html.js figure.diagram.inview svg rect,html.js figure.diagram.inview svg circle{opacity:1;transform:none}
+html.js figure.diagram.inview svg text,html.js figure.diagram.inview svg polygon{opacity:1}
+html.js figure.diagram.inview svg line,html.js figure.diagram.inview svg polyline{opacity:1;stroke-dashoffset:0}
+html.js .lesson{transition:transform .35s ease,box-shadow .35s ease}
+html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,24,28,.07)}
+@media (prefers-reduced-motion:reduce){
+ html.js figure.diagram svg rect,html.js figure.diagram svg circle,html.js figure.diagram svg text,
+ html.js figure.diagram svg line,html.js figure.diagram svg polyline,html.js figure.diagram svg polygon
+ {opacity:1!important;transform:none!important;stroke-dashoffset:0!important;stroke-dasharray:none!important;transition:none!important}
+ html.js .lesson{transition:none}
+}
+</style>
+</head>
+<body>
+<header class="site"><div class="wrap"><span>Containing the Optimizer</span><a href="https://unmitigatedrisk.com/">Unmitigated Risk · August 2026</a></div></header>
+
+<div class="wrap">
+<h1>Containing the Optimizer</h1>
+<p class="subhead">We call them all &ldquo;sandboxes&rdquo; to make them easy, and then quietly assume they all protect the same way. They don&rsquo;t.</p>
+<p class="dateline">Unmitigated Risk · August 2026 · a field guide to what isolation actually does</p>
+
+<div class="wide" style="margin-top:1.4rem">
+<figure class="diagram" aria-label="Attack surface shrinking step by step across the isolation spectrum, from container down to bare metal">
+<svg viewBox="0 0 900 400" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="900" height="400" fill="#FFFFFF"/>
+<text x="30" y="30" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">EVERYTHING SOLD AS &ldquo;ISOLATION,&rdquo; BY HOW MUCH THE OPTIMIZER CAN REACH</text>
+
+<!-- baseline -->
+<line x1="60" y1="320" x2="870" y2="320" stroke="#14181C" stroke-width="1"/>
+
+<!-- stepped surface band -->
+<g stroke="none">
+<rect x="60"  y="80"  width="120" height="240" fill="#F6E5E0"/>
+<rect x="180" y="128" width="120" height="192" fill="#F3E2D6"/>
+<rect x="300" y="160" width="120" height="160" fill="#F6EEDC"/>
+<rect x="420" y="192" width="120" height="128" fill="#F6EEDC"/>
+<rect x="540" y="222" width="120" height="98"  fill="#EAF0EC"/>
+<rect x="660" y="258" width="105" height="62"  fill="#E7F1EC"/>
+<rect x="765" y="305" width="105" height="15"  fill="#EEE3ED"/>
+</g>
+<polyline points="60,80 180,80 180,128 300,128 300,160 420,160 420,192 540,192 540,222 660,222 660,258 765,258 765,305 870,305"
+  fill="none" stroke="#AD4227" stroke-width="2"/>
+
+<!-- per-step labels: name + what it removes -->
+<g font-family="'Source Serif 4',serif" text-anchor="middle">
+<text x="120" y="100" font-size="11.5" font-weight="600" fill="#AD4227">Container</text>
+<text x="120" y="116" font-size="9.5" fill="#5F646B">shares the kernel</text>
+<text x="240" y="148" font-size="11.5" font-weight="600" fill="#14181C">Hosted VM</text>
+<text x="240" y="164" font-size="9.5" fill="#5F646B">trusts a host OS</text>
+<text x="360" y="180" font-size="11.5" font-weight="600" fill="#14181C">Fat hypervisor</text>
+<text x="360" y="196" font-size="9.5" fill="#5F646B">emulated devices</text>
+<text x="480" y="212" font-size="11.5" font-weight="600" fill="#14181C">Thin monitor</text>
+<text x="480" y="228" font-size="9.5" fill="#5F646B">minimal interface</text>
+<text x="600" y="242" font-size="11.5" font-weight="600" fill="#14181C">Confidential VM</text>
+<text x="600" y="258" font-size="9.5" fill="#5F646B">drops the operator</text>
+<text x="712" y="277" font-size="11.5" font-weight="600" fill="#14181C">Discrete enclave</text>
+<text x="712" y="293" font-size="9.5" fill="#5F646B">own silicon</text>
+<text x="817" y="298" font-size="11.5" font-weight="600" fill="#5B2A57">Bare metal</text>
+</g>
+
+<!-- caveat marker: confidential VM re-opens the cache -->
+<circle cx="600" cy="222" r="4" fill="#AD4227"/>
+<line x1="600" y1="222" x2="600" y2="352" stroke="#AD4227" stroke-width="1" stroke-dasharray="2,3"/>
+<text x="600" y="366" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#AD4227" text-anchor="middle">re-opens a different surface: the shared cache</text>
+
+<!-- axis end labels -->
+<text x="60" y="340" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#5F646B">MOST TO ESCAPE INTO</text>
+<text x="870" y="340" font-family="'IBM Plex Mono',monospace" font-size="10" fill="#2F7D5A" text-anchor="end">NOTHING TO ESCAPE INTO</text>
+</svg>
+<figcaption>The whole argument as one shape. Each step to the right removes a layer the optimizer could have reached, the shared kernel, the host OS, the emulated-device interface, the operator, the shared silicon, until at bare metal there is no guest and no host left to break out of. These are all called &ldquo;sandboxes,&rdquo; and the staircase is why that word misleads: they do not offer the same isolation, they offer a descending series of them. The one place the staircase lies is marked: the confidential VM drops the operator but re-opens a surface the software rungs never had, the shared cache, which is why the vulnerability record in Part III does not simply mirror this descent, and why &ldquo;even we can&rsquo;t see it&rdquo; is a narrower promise than it sounds.</figcaption>
+</figure>
+</div>
+
+
+<p><span class="eyebrow">Technical companion to</span> &nbsp;<a href="https://unmitigatedrisk.com/?p=1232">What Confidential Computing Is, What It Isn&rsquo;t</a> &nbsp;&middot;&nbsp; <a href="https://unmitigatedrisk.com/?p=1235">Confidential Computing&rsquo;s Inconvenient Truth</a></p>
+
+<p>Ask a room of technical people what separates a container from a virtual machine, a virtual machine from a confidential VM, a confidential VM from a hardware enclave, and you will get five confident answers and three correct ones. This is not a failure of intelligence. We call all of them &ldquo;sandboxes.&rdquo; It is a genuinely useful word. It makes the concept teachable in one breath, and everyone knows what you roughly mean. The trouble is the side effect: once four different mechanisms share one friendly name, people assume they share properties too. If this one is safe to run untrusted code in, that one must be. If this one keeps the operator out, that one must. The simplification that made the idea easy quietly ships a false equivalence, and the equivalence is wrong in exactly the places that matter.</p>
+
+<p>That false equivalence is having a moment, because in July 2026 an autonomous AI agent broke out of a test &ldquo;sandbox&rdquo; that was supposed to have no path to the internet and <a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/">hacked its way into the production systems of a real company</a>. The reaction was a wave of &ldquo;secure AI&rdquo; and &ldquo;private AI&rdquo; messaging, all of it leaning on the same friendly word and the property-transfer that comes with it. A vendor who says &ldquo;your model runs in a secure sandbox, even we can&rsquo;t see it&rdquo; is not usually lying. They are borrowing the reassurance one kind of sandbox earns and spending it on another, and the reader cannot tell, because the word was flattened before the conversation started.</p>
+
+<blockquote><p>Container, VM, confidential VM, enclave: four different mechanisms, built for four different adversaries, making four different promises. Calling them all &ldquo;sandboxes&rdquo; makes them easy to talk about and impossible to tell apart, and none of the four, by itself, contains an optimizer. What contains an optimizer is the design wrapped around whichever one you pick, and that is the part the friendly word hides.</p></blockquote>
+
+<p>This piece is a field guide to telling them apart. It walks the staircase above one step at a time, what each primitive shares, what it was built to resist, and what it honestly promises, then gives you two things to do with it: a way to read what any &ldquo;secure AI&rdquo; claim is actually asserting, and a way to size what each rung&rsquo;s failures cost you when they come. The evidence is the hardware record, because confidential computing is the most heavily studied rung and its failures are documented in a way the agent-sandbox rung&rsquo;s are not yet. Whether you are buying the claim or building the containment, the ladder is the same. Only the last question differs, and the piece ends by answering it both ways.</p>
+
+<nav class="toc" aria-label="Contents">
+<span class="eyebrow">Contents</span>
+<ul>
+<li class="part">Part I &middot; The Ladder</li>
+<li><span class="qn">1</span><a href="#s1">Container is not VM is not enclave</a></li>
+<li><span class="qn">2</span><a href="#s2">Not all VMs are the same</a></li>
+<li><span class="qn">3</span><a href="#s3">Why the rungs get confused</a></li>
+<li><span class="qn">4</span><a href="#s4">The top of the ladder, and the conflation</a></li>
+<li class="part">Part II &middot; What It Costs When a Rung Fails</li>
+<li><span class="qn">5</span><a href="#s5">Vector tells you how. It doesn&rsquo;t tell you what to do</a></li>
+<li><span class="qn">6</span><a href="#s6">How fixable is it, really</a></li>
+<li><span class="qn">7</span><a href="#s7">The shape of the record is the argument</a></li>
+<li class="part">Part III &middot; Reading the Record</li>
+<li><span class="qn">8</span><a href="#s8">The record, sorted by fate</a></li>
+<li><span class="qn">9</span><a href="#s9">The rung AI runs on, and hasn&rsquo;t met yet</a></li>
+<li><span class="qn">10</span><a href="#s10">Grading the escape</a></li>
+<li class="part">Part IV &middot; Containing the Optimizer</li>
+<li><span class="qn">11</span><a href="#s11">Containment is the design, not the rung</a></li>
+<li><span class="qn">12</span><a href="#s12">The wall, and the holes you cut in it</a></li>
+<li><span class="qn">13</span><a href="#s13">Watching what the actions add up to</a></li>
+<li><span class="qn">14</span><a href="#s14">The containment scorecard</a></li>
+<li><span class="qn">15</span><a href="#s15">If you&rsquo;re buying. If you&rsquo;re building.</a></li>
+<li><span class="qn">&check;</span><a href="#quiz">Check your understanding</a></li>
+</ul>
+</nav>
+
+<p class="part-head">Part I &middot; The Ladder</p>
+
+<h2 id="s1"><span class="snum">1</span>Container is not VM is not enclave</h2>
+<p>Start where the confusion starts, because until the words come apart nothing else in this piece can be reasoned about. Four mechanisms get spoken of as one, &ldquo;sandbox&rdquo; in casual use, &ldquo;isolation&rdquo; in the marketing, and they differ in the one dimension that decides everything downstream: <em>what they share with their neighbours</em>. Sharing is the attack surface. The more a workload shares with the code next to it, the more paths exist between them, and each rung of the ladder shares less than the one below it. One honest caveat before we climb: this is a single axis, not a total order of security. It ranks how much shared, guest-reachable surface each primitive exposes, and two other things that matter, whether the operator is inside or outside your trust boundary, and whether you sit on physically shared silicon, are orthogonal to it and do not move in lockstep as you climb. A confidential VM drops the operator but keeps the shared silicon; a discrete processor drops both. Keep those as separate questions; the ladder answers only the first. The flattening into a single word is convenient and it is exactly what makes the properties look transferable when they are not.</p>
+<p>A <strong>container</strong> shares the host kernel. Namespaces and cgroups give each container its own view of the process table, the filesystem, and the network, but there is one kernel underneath all of them, and a flaw in that kernel is a flaw in the wall between every container on the box. Containers were built to keep <em>cooperating</em> workloads from tripping over each other, a packaging and resource-management tool, not a defense against code that is actively trying to get out. That is not a knock on containers; it is what they are for. It is only a problem when someone points hostile code at one and expects a security boundary, which is exactly what happened in July.</p>
+<p>A <strong>virtual machine</strong> shares the hypervisor and the silicon, but not the kernel. Each guest runs its own operating system, and the hypervisor mediates between them with a far smaller, far more scrutinised interface than a shared kernel exposes. This is a genuine escalation in isolation strength, and it is why the security-conscious response to &ldquo;run untrusted code&rdquo; has long been &ldquo;put a VM boundary around it.&rdquo; But a VM still trusts the host. The operator, the hypervisor, and anyone who compromises them can see inside the guest. The VM defends you from your neighbours, not from your landlord.</p>
+<p>Those two, container and VM, are the entire isolation vocabulary most deployments actually use, and the gap between them is already large enough to matter. A container escape and a VM escape are different events with different likelihoods and different fixes, and treating &ldquo;it&rsquo;s isolated&rdquo; as though it named one guarantee erases that difference. The next two rungs exist to defend against the landlord, and they are where the AI-privacy pitch lives.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>The question that separates the rungs is <em>what does it share?</em> A container shares the kernel; a VM shares only the hypervisor and the hardware. Sharing is surface, and surface is risk. &ldquo;Isolated&rdquo; without naming the rung is a claim with no threat model attached, which is to say, no claim at all.</p></div>
+
+<h2 id="s2"><span class="snum">2</span>Not all VMs are the same</h2>
+<p>Before climbing higher, open up the rung we just set down, because &ldquo;it runs in a VM&rdquo; hides a range wide enough to matter to the argument. The isolation a VM gives you is set almost entirely by the hypervisor underneath it, and hypervisors differ in two dimensions that each change what the contained code can reach, and then there is a third move, which is to remove the hypervisor from the picture entirely. The optimizer does not see &ldquo;a VM.&rdquo; It sees whatever surface the specific arrangement exposes, and it will probe every inch of it.</p>
+<p>The first dimension is <em>where the hypervisor runs and how much privileged software sits under the guest</em>. A <strong>type-2, or hosted, hypervisor</strong> (VirtualBox, VMware Workstation) runs as an application on top of an ordinary host operating system. That means the guest&rsquo;s isolation depends on the hypervisor <em>and</em> the entire host kernel beneath it; compromise the host OS and the VM boundary is moot. A <strong>type-1, or bare-metal, hypervisor</strong> (ESXi, Xen) runs directly on the hardware, with no general-purpose OS underneath to drag into the trusted computing base. KVM is the instructive middle case, because it does not fit the tidy split: it turns the Linux kernel itself into the hypervisor, so the host OS <em>is</em> the trusted computing base, and Firecracker and Cloud Hypervisor run as thin user-space monitors on top of exactly that. The lesson is that the layers of privileged software the guest sits on top of vary enormously between two things both called &ldquo;a hypervisor,&rdquo; and that variation is a rung. The hosted case trusts everything a full OS trusts; the bare-metal case trusts less; and where KVM lands depends on how much of Linux the monitor above it actually exposes.</p>
+<p>The second dimension is <em>how much the hypervisor exposes to the guest</em>. A <strong>fat hypervisor</strong> carries decades of features (emulated devices, live migration, a broad paravirtualized interface), and that emulated-device code is precisely where most historical VM escapes have lived; the canonical ones are bugs in an emulated floppy or network controller the guest was never expected to weaponise. A <strong>thin monitor</strong> like Firecracker deliberately strips that device-emulation surface down to a minimal, purpose-built interface, which is the entire reason it can be trusted around untrusted code in a way a legacy hypervisor cannot. Firecracker does this on top of Linux KVM, not instead of it, so the shrinking is of the monitor&rsquo;s own exposed interface rather than of everything beneath it (AWS Nitro reaches a similar small guest interface by a different route, its own hypervisor and dedicated offload hardware rather than KVM). Same word, an order of magnitude difference in the surface the guest can reach. One thing none of these VM arrangements changes, though: a thin monitor still trusts the operator underneath it. Only the confidential-VM rung above, SEV-SNP and TDX, uses hardware to drop the operator from the trust boundary. A smaller guest interface and an untrusted operator are different axes, and it is worth not letting &ldquo;minimal&rdquo; slide into &ldquo;shielded from the host.&rdquo;</p>
+
+<div class="wide">
+<figure class="diagram" aria-label="The virtual-machine rung expanded: five arrangements from largest to smallest trusted surface, ending at bare metal">
+<svg viewBox="0 0 900 320" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="900" height="320" fill="#FFFFFF"/>
+<text x="30" y="30" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">&ldquo;PUT IT IN A VM&rdquo; NAMES FIVE DIFFERENT AMOUNTS OF TRUST</text>
+<text x="30" y="304" font-family="'IBM Plex Mono',monospace" font-size="10.5" fill="#AD4227">LARGER TRUSTED SURFACE</text>
+<text x="870" y="304" font-family="'IBM Plex Mono',monospace" font-size="10.5" fill="#2F7D5A" text-anchor="end">NOTHING LEFT TO ESCAPE INTO</text>
+<line x1="30" y1="288" x2="870" y2="288" stroke="#DAD7CE" stroke-width="1"/>
+<g font-family="'Source Serif 4',serif">
+<!-- type-2 hosted -->
+<rect x="30" y="48" width="160" height="222" rx="3" fill="#F6E5E0" stroke="#AD4227"/>
+<text x="41" y="71" font-size="12.5" font-weight="600" fill="#14181C">Type-2 (hosted)</text>
+<text x="41" y="86" font-size="9" fill="#5F646B" font-family="'IBM Plex Mono',monospace">VirtualBox</text>
+<text x="41" y="110" font-size="10.5" fill="#14181C">runs as an app on</text>
+<text x="41" y="124" font-size="10.5" fill="#14181C">a full host OS</text>
+<text x="41" y="152" font-size="9.5" fill="#AD4227">TRUSTS</text>
+<text x="41" y="167" font-size="10.5" fill="#14181C">hypervisor + the</text>
+<text x="41" y="181" font-size="10.5" fill="#14181C">whole host kernel</text>
+<text x="41" y="256" font-size="9.5" fill="#5F646B" font-style="italic">biggest surface</text>
+<!-- fat type-1 -->
+<rect x="200" y="48" width="160" height="222" rx="3" fill="#F6EEDC" stroke="#A8770A"/>
+<text x="211" y="71" font-size="12.5" font-weight="600" fill="#14181C">Fat Type-1</text>
+<text x="211" y="86" font-size="9" fill="#5F646B" font-family="'IBM Plex Mono',monospace">ESXi, legacy Xen</text>
+<text x="211" y="110" font-size="10.5" fill="#14181C">bare-metal, but</text>
+<text x="211" y="124" font-size="10.5" fill="#14181C">with broad device</text>
+<text x="211" y="138" font-size="10.5" fill="#14181C">emulation</text>
+<text x="211" y="166" font-size="9.5" fill="#7A5A08">TRUSTS</text>
+<text x="211" y="181" font-size="10.5" fill="#14181C">a large emulated</text>
+<text x="211" y="195" font-size="10.5" fill="#14181C">interface</text>
+<text x="211" y="256" font-size="9.5" fill="#5F646B" font-style="italic">where escapes live</text>
+<!-- thin monitor -->
+<rect x="370" y="48" width="160" height="222" rx="3" fill="#F6EEDC" stroke="#A8770A"/>
+<text x="381" y="71" font-size="12.5" font-weight="600" fill="#14181C">Thin monitor</text>
+<text x="381" y="86" font-size="9" fill="#5F646B" font-family="'IBM Plex Mono',monospace">Firecracker, Nitro</text>
+<text x="381" y="110" font-size="10.5" fill="#14181C">on Linux KVM,</text>
+<text x="381" y="124" font-size="10.5" fill="#14181C">minimal purpose-built</text>
+<text x="381" y="138" font-size="10.5" fill="#14181C">interface</text>
+<text x="381" y="166" font-size="9.5" fill="#7A5A08">TRUSTS</text>
+<text x="381" y="181" font-size="10.5" fill="#14181C">a deliberately</text>
+<text x="381" y="195" font-size="10.5" fill="#14181C">small surface</text>
+<text x="381" y="256" font-size="9.5" fill="#5F646B" font-style="italic">still trusts operator</text>
+<!-- confidential VM -->
+<rect x="540" y="48" width="160" height="222" rx="3" fill="#E7F1EC" stroke="#2F7D5A"/>
+<text x="551" y="71" font-size="12.5" font-weight="600" fill="#14181C">Confidential VM</text>
+<text x="551" y="86" font-size="9" fill="#5F646B" font-family="'IBM Plex Mono',monospace">SEV-SNP, TDX</text>
+<text x="551" y="110" font-size="10.5" fill="#14181C">hardware drops the</text>
+<text x="551" y="124" font-size="10.5" fill="#14181C">operator from the</text>
+<text x="551" y="138" font-size="10.5" fill="#14181C">trust boundary</text>
+<text x="551" y="166" font-size="9.5" fill="#2F7D5A">TRUSTS</text>
+<text x="551" y="181" font-size="10.5" fill="#14181C">the silicon, not</text>
+<text x="551" y="195" font-size="10.5" fill="#14181C">the hypervisor</text>
+<text x="551" y="256" font-size="9.5" fill="#AD4227" font-style="italic">but shares the cache</text>
+<!-- bare metal / no hypervisor -->
+<rect x="710" y="48" width="160" height="222" rx="3" fill="#EEE3ED" stroke="#5B2A57"/>
+<text x="721" y="71" font-size="12.5" font-weight="600" fill="#14181C">No hypervisor</text>
+<text x="721" y="86" font-size="9" fill="#5F646B" font-family="'IBM Plex Mono',monospace">TamaGo on the metal</text>
+<text x="721" y="110" font-size="10.5" fill="#14181C">app runs directly</text>
+<text x="721" y="124" font-size="10.5" fill="#14181C">on hardware; no OS,</text>
+<text x="721" y="138" font-size="10.5" fill="#14181C">no monitor beneath</text>
+<text x="721" y="166" font-size="9.5" fill="#5B2A57">TRUSTS</text>
+<text x="721" y="181" font-size="10.5" fill="#14181C">firmware + the</text>
+<text x="721" y="195" font-size="10.5" fill="#14181C">runtime, nothing else</text>
+<text x="721" y="249" font-size="9.5" fill="#5F646B" font-style="italic">no guest = nothing</text>
+<text x="721" y="262" font-size="9.5" fill="#5F646B" font-style="italic">to escape into</text>
+</g>
+</svg>
+<figcaption>The middle rung of the main ladder, opened up. &ldquo;It runs in a VM&rdquo; can mean any of these, and they do not offer the same isolation: a hosted hypervisor trusts an entire host OS the guest can reach through, a fat bare-metal hypervisor trusts a large emulated-device interface (where most historical VM escapes have lived), a thin monitor shrinks that interface on purpose, and a confidential VM uses hardware to drop the operator from the trust boundary. The fifth column is the floor of the axis: run the workload directly on the hardware with no hypervisor and no OS beneath it, as the TamaGo project does, and the hypervisor-escape and kernel-escape classes have no target at all, because there is no guest and no host, only the application and the firmware. Same three words at the left, and at the right they stop applying entirely.</figcaption>
+</figure>
+
+</div>
+
+
+<p>The <strong>confidential VM</strong> near the far end is itself a hypervisor variant, the one where the hardware removes the operator from the trust boundary, so the guest no longer has to trust the hypervisor at all. That is what makes it the bridge to the upper rungs, and it is why the &ldquo;even we can&rsquo;t see it&rdquo; claim is coherent only for <em>this</em> arrangement and not for the ones to its left. It is also, as the record will show, the arrangement that trades the hypervisor&rsquo;s surface for the cache&rsquo;s.</p>
+<p>Keep going in that direction and you reach the floor of the whole axis: <strong>no hypervisor at all.</strong> Compile the workload to run directly on the hardware, with no host OS, no monitor, and no guest, and the entire family of hypervisor-escape and kernel-escape attacks loses its target, because the layers those attacks live in are simply not present. This is not hypothetical; it is what a project like <strong>TamaGo</strong> does, running a memory-safe Go application bare-metal on hardware like the USB armory, with the trusted computing base reduced to the firmware and the runtime and nothing else. The catch is the same trade the dedicated security processor makes at the top of the main ladder, reached from the software side. You give up the cloud model entirely (one workload owns the machine, no multi-tenancy, no orchestration) and you move the whole of your trust onto the firmware and the runtime, which are now the entire attack surface. The cost is not abstract. Bin-packing, elasticity, live migration, spot capacity, the entire economics that make cloud inference affordable all assume many tenants sharing a machine, and the top rungs give exactly that up. Which is why this end of the axis is not for a typical deployment. It is for the case where the workload itself is the crown jewel and the multi-tenancy discount is not worth what it exposes, a frontier lab isolating model weights, a signing operation, a key-management core. For everyone running inference at cloud economics, the honest position is that the top rung is not available to you, and the design question is how you contain an optimizer on a rung that shares silicon. It is the strongest containment on this sub-ladder and the least like a cloud deployment, and which of those facts matters more is exactly the design decision this piece is trying to make legible.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>&ldquo;Put it in a VM&rdquo; is not one decision. Hosted versus bare-metal sets how much host you trust; fat versus thin sets how much surface the guest can touch; the confidential variant drops the operator; removing the hypervisor leaves nothing to escape into. The optimizer&rsquo;s reach is decided by <em>which</em> arrangement, and the phrase &ldquo;in a VM&rdquo; conceals exactly that, so you have to ask.</p></div>
+
+<h2 id="s3"><span class="snum">3</span>Why the rungs get confused</h2>
+<p>The reason these mechanisms blur together, and the reason a primitive built for one job keeps getting sold for another, is almost never incompetence. It is economics, and the pattern is old enough to have a shape. Build a mechanism X for threat model Y; later, repurpose X for threat model Z, because X already exists and shipping it beats building the right thing years from now. Each repurposing quietly changes what the mechanism protects against while the <em>name</em> stays the same, and that is how one word ends up covering four threat models.</p>
+<p>I have watched this run several times over thirty years in and around the public-key infrastructure that secures the web, and the examples rhyme. SMS was built for messaging and repurposed as an authentication channel; SIM-swapping exploited the gap, and the channel is still everywhere because deployment inertia beats the security community&rsquo;s ability to move a market. SSL was built for browser sessions and repurposed for APIs, IoT, email, and VPNs; the ecosystem spent two decades closing the resulting gaps through Certificate Transparency, stricter issuance rules, and sustained institutional pressure, fixes that were not inevitable and did not come from patching. And Intel&rsquo;s SGX was built for secure remote computation, with content protection as one of its flagship early uses, protecting a media stream from the machine&rsquo;s owner (it underpinned Ultra HD Blu-ray playback, and its removal from later chips broke that), then was repurposed to protect a cloud tenant from the machine&rsquo;s operator. That last repurposing did something worse than widen the threat model. It inverted it. The party SGX&rsquo;s content-protection use was built to trust, the platform owner, became the party the cloud version has to defend against.</p>
+
+<div class="wide">
+<figure class="diagram" aria-label="An isolation primitive built to trust the platform owner, repurposed to defend against them">
+<svg viewBox="0 0 900 280" role="img" xmlns="http://www.w3.org/2000/svg" font-family="'Source Serif 4',serif">
+<rect width="900" height="280" fill="#FFFFFF"/>
+<text x="30" y="28" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1" fill="#5F646B">THE SAME MECHANISM. THE TRUSTED PARTY MOVED TO THE OTHER SIDE.</text>
+
+<!-- LEFT panel: content-protection use, owner trusted -->
+<text x="30" y="60" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5F646B" letter-spacing="0.5">EARLY USE &mdash; CONTENT PROTECTION</text>
+<rect x="30" y="72" width="360" height="150" rx="3" fill="#F7F6F2" stroke="#DAD7CE"/>
+<!-- the enclave (identical in both panels) -->
+<rect x="150" y="108" width="120" height="78" rx="3" fill="#FFFFFF" stroke="#33566B" stroke-width="1.5"/>
+<text x="210" y="142" font-size="12.5" fill="#14181C" text-anchor="middle">enclave</text>
+<text x="210" y="160" font-size="10" fill="#5F646B" text-anchor="middle">unchanged</text>
+<!-- owner: TRUSTED (green) -->
+<circle cx="75" cy="120" r="7" fill="#2F7D5A"/>
+<text x="75" y="146" font-size="11.5" fill="#2F7D5A" text-anchor="middle" font-weight="600">owner</text>
+<text x="75" y="161" font-size="9" fill="#2F7D5A" text-anchor="middle" font-family="'IBM Plex Mono',monospace">TRUSTED</text>
+<!-- user: adversary (rust) -->
+<circle cx="345" cy="120" r="7" fill="#AD4227"/>
+<text x="345" y="146" font-size="11.5" fill="#AD4227" text-anchor="middle" font-weight="600">user</text>
+<text x="345" y="161" font-size="9" fill="#AD4227" text-anchor="middle" font-family="'IBM Plex Mono',monospace">ADVERSARY</text>
+
+<!-- arrow -->
+<line x1="400" y1="147" x2="500" y2="147" stroke="#14181C" stroke-width="1.5"/>
+<polygon points="500,147 490,142 490,152" fill="#14181C"/>
+<text x="450" y="138" font-size="10" fill="#5F646B" text-anchor="middle" font-family="'IBM Plex Mono',monospace">repurpose</text>
+<text x="450" y="164" font-size="10" fill="#5F646B" text-anchor="middle" font-family="'IBM Plex Mono',monospace">same chip</text>
+
+<!-- RIGHT panel: deployed in cloud, operator now adversary -->
+<text x="510" y="60" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5F646B" letter-spacing="0.5">DEPLOYED IN &mdash; MULTI-TENANT CLOUD</text>
+<rect x="510" y="72" width="360" height="150" rx="3" fill="#F7F6F2" stroke="#DAD7CE"/>
+<rect x="630" y="108" width="120" height="78" rx="3" fill="#FFFFFF" stroke="#33566B" stroke-width="1.5"/>
+<text x="690" y="142" font-size="12.5" fill="#14181C" text-anchor="middle">enclave</text>
+<text x="690" y="160" font-size="10" fill="#5F646B" text-anchor="middle">unchanged</text>
+<!-- operator: now adversary (rust) - the flip -->
+<circle cx="555" cy="120" r="7" fill="#AD4227"/>
+<text x="555" y="146" font-size="11.5" fill="#AD4227" text-anchor="middle" font-weight="600">operator</text>
+<text x="555" y="161" font-size="9" fill="#AD4227" text-anchor="middle" font-family="'IBM Plex Mono',monospace">NOW ADVERSARY</text>
+<!-- tenant: the one being protected now -->
+<circle cx="825" cy="120" r="7" fill="#2F7D5A"/>
+<text x="825" y="146" font-size="11.5" fill="#2F7D5A" text-anchor="middle" font-weight="600">tenant</text>
+<text x="825" y="161" font-size="9" fill="#2F7D5A" text-anchor="middle" font-family="'IBM Plex Mono',monospace">PROTECTED</text>
+
+<!-- the flip highlighted: a small curved marker showing owner->operator flipped color -->
+<text x="450" y="210" font-size="10.5" fill="#AD4227" text-anchor="middle" font-style="italic" font-family="'Source Serif 4',serif">the party the design trusts is now the adversary</text>
+
+<text x="30" y="260" font-family="'IBM Plex Mono',monospace" font-size="11.5" fill="#14181C">The boundary did not move. The colour did &mdash; green to red, on the party it was built to trust.</text>
+</svg>
+
+<figcaption>SGX kept the same silicon boundary across the repurposing. What flipped is the trust relationship: the owner it was designed to serve became the adversary it now has to resist. Every shared-resource attack in the record lives in the space that inversion opened, and the same inversion is happening now, in software, to the agent sandbox.</figcaption>
+</figure>
+</div>
+
+<p>Hold that against the box that escaped in July. A container runtime and a language-model sandbox were built to contain <em>cooperating</em> code (code that is not trying to leave). Point an autonomous agent at one, feed it instructions from an untrusted web page or a poisoned document, or just turn it loose to optimize hard against a benchmark, and the contained code is now adversarial by construction. Same box, inverted threat model. The container did not fail at its job; it was asked to do a different job, one rung above the one it occupies, and the name &ldquo;sandbox&rdquo; hid the substitution.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>Repurposing is why the ladder&rsquo;s rungs get confused. The mechanism keeps its name while its threat model changes underneath. When a vendor says &ldquo;sandbox&rdquo; or &ldquo;isolated,&rdquo; ask which rung they mean and which adversary it was built for, because the odds are good the primitive is being asked to defend against something it was never designed to resist.</p></div>
+
+<h2 id="s4"><span class="snum">4</span>The top of the ladder, and the conflation</h2>
+<p>The two upper rungs exist to defend against the landlord (the operator the VM still trusts), and they are where &ldquo;secure AI&rdquo; and &ldquo;private AI&rdquo; actually live. A <strong>confidential VM</strong> (AMD SEV-SNP, Intel TDX) keeps the guest encrypted in memory so that even the operator and the hypervisor cannot read it through the software stack. This is the technology behind almost every &ldquo;even we can&rsquo;t see your data&rdquo; claim, and within its threat model it delivers. The provider genuinely cannot read your memory the ordinary way. But a confidential VM still shares the physical caches, buses, and the memory-encryption engine with other tenants, and those shared resources leak through side channels that the encryption does not touch. The guarantee is real and it is narrower than the sentence implies.</p>
+<p>A <strong>dedicated security processor</strong> (a hardware security module, a smartcard secure element, Apple&rsquo;s Secure Enclave) sits at the top because it shares almost nothing with the workloads around it. It runs on physically dedicated execution resources, its own processor and a protected region of memory, rather than time-slicing the same cores and caches as other tenants, so the cache-timing, speculative-execution, and port-contention classes that plague the shared-silicon rungs are categorically absent rather than merely mitigated. (This is a different claim from the confidential-VM rung: AWS Nitro Enclaves, for instance, are hardened VMs isolated by the Nitro hypervisor, not a dedicated security processor, and belong a rung down.) The trade is explicit and it is not free. A dedicated security processor does not solve cloud multi-tenancy, which is the entire reason the industry reached for shared-silicon confidential VMs in the first place. You buy the strongest isolation by giving up the sharing that made the cloud economical.</p>
+<p>Now the conflation, stated plainly. &ldquo;Your model runs in a secure enclave, even we can&rsquo;t see it&rdquo; is a sentence that borrows the <em>word</em> from the top rung and the <em>economics</em> from a middle one. Sold as an enclave-grade promise, delivered on a shared-silicon confidential VM, it inherits the confidential VM&rsquo;s side channels, which, as Part III shows, are exactly the ones that reach model weights and user prompts. The pitch is not usually a lie. It is a rung substitution, selling the guarantee of the top of the ladder at the price and deployment of the middle, with the reader unable to tell because the words were blurred before the conversation started.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>&ldquo;Even we can&rsquo;t see it&rdquo; is a confidential-VM promise wearing enclave language. It is true through the software stack and false through the cache. When a &ldquo;secure&rdquo; or &ldquo;private&rdquo; AI claim reaches you, the first job is to locate which rung it actually runs on, because the promise is only as strong as the rung, not as strong as the adjective.</p></div>
+
+<p class="part-head">Part II &middot; What It Costs When a Rung Fails</p>
+
+<h2 id="s5"><span class="snum">5</span>Vector tells you how. It doesn&rsquo;t tell you what to do</h2>
+<p>Attacks on a hardware boundary sort into seven vectors, by how the attacker gets information across it. A single attack can span more than one, a speculative-execution bug that leaks through a cache side channel touches two, but the vector names where the boundary actually failed. They run roughly from the shared-resource side channels that dominate the record to the interface and firmware attacks that look most like a classic software escape.</p>
+
+<div class="wide">
+<figure class="diagram" aria-label="Seven ways across the isolation boundary, coloured by how fixable each tends to be">
+<svg viewBox="0 0 900 470" role="img" xmlns="http://www.w3.org/2000/svg" font-family="'Source Serif 4',serif">
+<rect width="900" height="470" fill="#FFFFFF"/>
+<text x="30" y="30" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">SEVEN WAYS ACROSS THE BOUNDARY, COLOURED BY HOW FIXABLE THEY TEND TO BE</text>
+
+<!-- central boundary: narrower, centered -->
+<rect x="390" y="200" width="120" height="86" rx="4" fill="#F7F6F2" stroke="#33566B" stroke-width="1.5"/>
+<text x="450" y="238" font-size="13.5" fill="#14181C" text-anchor="middle" font-weight="600">the boundary</text>
+<text x="450" y="256" font-size="10.5" fill="#5F646B" text-anchor="middle">code + data,</text>
+<text x="450" y="270" font-size="10.5" fill="#5F646B" text-anchor="middle">encrypted</text>
+
+<!-- connectors first (behind circles). Left column circles at cx=345, right at cx=555.
+     Box left edge x=390, right edge x=510. Lines run circle -> box edge. -->
+<g stroke-width="1.4" fill="none">
+<line x1="345" y1="72"  x2="390" y2="212" stroke="#AD4227" opacity="0.5"/>
+<line x1="345" y1="145" x2="390" y2="228" stroke="#AD4227" opacity="0.5"/>
+<line x1="345" y1="243" x2="390" y2="243" stroke="#AD4227" opacity="0.5"/>
+<line x1="345" y1="360" x2="390" y2="270" stroke="#A8770A" opacity="0.5"/>
+<line x1="555" y1="72"  x2="510" y2="212" stroke="#2F7D5A" opacity="0.5"/>
+<line x1="555" y1="145" x2="510" y2="228" stroke="#5B2A57" opacity="0.5"/>
+<line x1="555" y1="360" x2="510" y2="270" stroke="#AD4227" opacity="0.5"/>
+</g>
+
+<!-- LEFT column: circle at cx=345, label text OUTBOARD (to the left, right-aligned ending before the circle) -->
+<g text-anchor="end">
+<text x="322" y="68" font-size="12.5" fill="#14181C" font-weight="600">Cache / memory side channel</text>
+<text x="322" y="85" font-size="10.5" fill="#5F646B">watch cache timing to infer secrets</text>
+<text x="322" y="141" font-size="12.5" fill="#14181C" font-weight="600">Speculative / transient</text>
+<text x="322" y="158" font-size="10.5" fill="#5F646B">read rolled-back state via its traces</text>
+<text x="322" y="239" font-size="12.5" fill="#14181C" font-weight="600">Microarchitectural state</text>
+<text x="322" y="256" font-size="10.5" fill="#5F646B">port contention, power, interrupts</text>
+<text x="322" y="356" font-size="12.5" fill="#14181C" font-weight="600">Fault injection</text>
+<text x="322" y="373" font-size="10.5" fill="#5F646B">glitch voltage or clock to corrupt it</text>
+</g>
+<g>
+<circle cx="345" cy="72" r="13" fill="#AD4227"/><text x="345" y="76" font-size="11.5" fill="#fff" text-anchor="middle" font-family="'IBM Plex Mono',monospace">1</text>
+<circle cx="345" cy="145" r="13" fill="#AD4227"/><text x="345" y="149" font-size="11.5" fill="#fff" text-anchor="middle" font-family="'IBM Plex Mono',monospace">2</text>
+<circle cx="345" cy="243" r="13" fill="#AD4227"/><text x="345" y="247" font-size="11.5" fill="#fff" text-anchor="middle" font-family="'IBM Plex Mono',monospace">3</text>
+<circle cx="345" cy="360" r="13" fill="#A8770A"/><text x="345" y="364" font-size="11.5" fill="#fff" text-anchor="middle" font-family="'IBM Plex Mono',monospace">4</text>
+</g>
+
+<!-- RIGHT column: circle at cx=555, label text OUTBOARD (to the right, left-aligned starting after the circle) -->
+<g text-anchor="start">
+<text x="578" y="68" font-size="12.5" fill="#14181C" font-weight="600">Software interface</text>
+<text x="578" y="85" font-size="10.5" fill="#5F646B">abuse the API between in and out</text>
+<text x="578" y="141" font-size="12.5" fill="#14181C" font-weight="600">Firmware / microcode / key</text>
+<text x="578" y="158" font-size="10.5" fill="#5F646B">break the root of trust itself</text>
+<text x="578" y="356" font-size="12.5" fill="#14181C" font-weight="600">Physical / bus interposition</text>
+<text x="578" y="373" font-size="10.5" fill="#5F646B">tap the memory bus in hardware</text>
+</g>
+<g>
+<circle cx="555" cy="72" r="13" fill="#2F7D5A"/><text x="555" y="76" font-size="11.5" fill="#fff" text-anchor="middle" font-family="'IBM Plex Mono',monospace">7</text>
+<circle cx="555" cy="145" r="13" fill="#5B2A57"/><text x="555" y="149" font-size="11.5" fill="#fff" text-anchor="middle" font-family="'IBM Plex Mono',monospace">6</text>
+<circle cx="555" cy="360" r="13" fill="#AD4227"/><text x="555" y="364" font-size="11.5" fill="#fff" text-anchor="middle" font-family="'IBM Plex Mono',monospace">5</text>
+</g>
+
+<!-- legend + takeaway -->
+<line x1="30" y1="410" x2="870" y2="410" stroke="#EDEBE4" stroke-width="1"/>
+<g font-family="'IBM Plex Mono',monospace" font-size="10">
+<circle cx="38" cy="434" r="5" fill="#AD4227"/><text x="50" y="438" fill="#5F646B">tends architectural</text>
+<circle cx="212" cy="434" r="5" fill="#A8770A"/><text x="224" y="438" fill="#5F646B">tends compensating</text>
+<circle cx="392" cy="434" r="5" fill="#2F7D5A"/><text x="404" y="438" fill="#5F646B">tends patchable</text>
+<circle cx="548" cy="434" r="5" fill="#5B2A57"/><text x="560" y="438" fill="#5F646B">tends root-of-trust</text>
+</g>
+<text x="30" y="462" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#14181C">Vector 7 looks like a classic sandbox escape. Vectors 1&ndash;3 have no equivalent in the container world.</text>
+</svg>
+
+
+<figcaption>Container and sandbox escapes cluster almost entirely in vector 7, the interface. The hardware record is dominated by vectors 1&ndash;3, the shared-resource side channels, which have no analogue in a pure-software sandbox. That is the first thing the AI-isolation conversation should absorb: moving isolation into shared silicon adds whole attack classes that software isolation never had.</figcaption>
+</figure>
+</div>
+
+<p>The vector is useful, but it stops one step short of the decision. Knowing an attack was a cache side channel or an interface bug tells you a great deal about <em>how</em> it works and nothing directly about <em>what you should do</em>. And that missing step is precisely the one a vulnerability score also skips. A CVSS number rates how bad the exposure is if exploited. It says nothing about whether the fix is a maintenance window or a hardware-replacement cycle, and it treats a bug closed in next month&rsquo;s microcode and a leak baked into the silicon for the machine&rsquo;s five-year service life as the same species of problem, because from the standpoint of severity they can be identical.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>Vector and severity together still leave the operational question unanswered: is this a patch, a workaround, a refresh cycle, or a full rotation? Neither the attack&rsquo;s mechanism nor its score tells you. That is the gap the next section fills, and it is the gap the whole industry currently reads past.</p></div>
+
+<h2 id="s6"><span class="snum">6</span>How fixable is it, really</h2>
+<p>So sort the record a second way, not by how the boundary was crossed, but by how fundamentally fixable the weakness is. This is the cost layer that sits under the ladder. Once you know which rung a workload is on, remediability tells you what that rung&rsquo;s failures will cost you. It has four values, and the value, not the severity, is what sizes your response.</p>
+
+<div class="wide">
+<figure class="diagram" aria-label="The four remediability classes, from patchable to permanent">
+<svg viewBox="0 0 920 250" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="920" height="250" fill="#FFFFFF"/>
+<g font-family="'Source Serif 4',serif">
+<rect x="30" y="40" width="200" height="150" rx="3" fill="#E7F1EC" stroke="#2F7D5A"/>
+<text x="46" y="66" font-size="13" font-weight="600" fill="#2F7D5A">Patchable</text>
+<text x="46" y="90" font-size="11.5" fill="#14181C">SDK, microcode, or</text>
+<text x="46" y="106" font-size="11.5" fill="#14181C">firmware update fixes it</text>
+<text x="46" y="150" font-size="10.5" fill="#5F646B" font-family="'IBM Plex Mono',monospace">DO</text>
+<text x="46" y="168" font-size="11" fill="#14181C">schedule the patch;</text>
+<text x="46" y="182" font-size="11" fill="#14181C">accept the perf cost</text>
+<rect x="250" y="40" width="200" height="150" rx="3" fill="#F6EEDC" stroke="#A8770A"/>
+<text x="266" y="66" font-size="13" font-weight="600" fill="#7A5A08">Compensating control</text>
+<text x="266" y="90" font-size="11.5" fill="#14181C">bug stays; you reduce</text>
+<text x="266" y="106" font-size="11.5" fill="#14181C">the conditions for it</text>
+<text x="266" y="150" font-size="10.5" fill="#5F646B" font-family="'IBM Plex Mono',monospace">DO</text>
+<text x="266" y="168" font-size="11" fill="#14181C">disable SMT, secure the</text>
+<text x="266" y="182" font-size="11" fill="#14181C">facility, add verifiers</text>
+<rect x="470" y="40" width="200" height="150" rx="3" fill="#F6E5E0" stroke="#AD4227"/>
+<text x="486" y="66" font-size="13" font-weight="600" fill="#AD4227">Architectural</text>
+<text x="486" y="90" font-size="11.5" fill="#14181C">property of the silicon;</text>
+<text x="486" y="106" font-size="11.5" fill="#14181C">no patch, only new HW</text>
+<text x="486" y="150" font-size="10.5" fill="#5F646B" font-family="'IBM Plex Mono',monospace">DO</text>
+<text x="486" y="168" font-size="11" fill="#14181C">accept residual risk or</text>
+<text x="486" y="182" font-size="11" fill="#14181C">plan the refresh cycle</text>
+<rect x="690" y="40" width="200" height="150" rx="3" fill="#EEE3ED" stroke="#5B2A57"/>
+<text x="706" y="66" font-size="13" font-weight="600" fill="#5B2A57">Root-of-trust break</text>
+<text x="706" y="90" font-size="11.5" fill="#14181C">the trust anchor itself;</text>
+<text x="706" y="106" font-size="11.5" fill="#14181C">attestation can be forged</text>
+<text x="706" y="150" font-size="10.5" fill="#5F646B" font-family="'IBM Plex Mono',monospace">DO</text>
+<text x="706" y="168" font-size="11" fill="#14181C">decommission the gen;</text>
+<text x="706" y="182" font-size="11" fill="#14181C">rotate sealed secrets</text>
+</g>
+<text x="30" y="222" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5F646B">MAINTENANCE WINDOW</text>
+<line x1="250" y1="218" x2="688" y2="218" stroke="#DAD7CE" stroke-width="1"/>
+<polygon points="688,218 678,213 678,223" fill="#DAD7CE"/>
+<text x="890" y="222" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5B2A57" text-anchor="end">CAPEX DECISION</text>
+</svg>
+<figcaption>The four fates, named. Left to right, the response grows from something ops closes on a Tuesday to something that ends a hardware generation. The data loss can be identical across all four; what differs is the cost and shape of the response, which is exactly what a severity score omits.</figcaption>
+</figure>
+</div>
+
+<p><strong>Patchable.</strong> A flaw in an SDK, microcode, or firmware that an update resolves. Foreshadow, ZombieLoad, Downfall, most speculative-execution attacks, the July agent&rsquo;s whole exploit chain. Often carries a performance cost, but the flaw is gone for patched systems. <strong>Compensating control.</strong> The flaw stays; you reduce the conditions under which it can be exploited, disable simultaneous multithreading, put the hardware in a physically secured facility, run multiple independent attestation verifiers. You have not fixed it; you have narrowed it. <strong>Architectural.</strong> A property of the silicon or the encryption engine that no patch reaches: deterministic memory encryption that enables ciphertext side channels, port contention that survives disabling hyperthreading, physical bus interposition. It persists for the life of the hardware; mitigations reduce exploitability without removing the cause. <strong>Root-of-trust break.</strong> The trust anchor itself is compromised, a root key extracted from fuses, a microcode signature check defeated. These do not leak data; they forge the proof that the boundary exists, which makes attestation itself meaningless for that platform generation. The line that argues is the one between compensating and architectural, and some entries sit close enough to it that a careful reader could file them either way. When that happens the resolving question is which response you would actually have to fund, because that is the only thing the class is for.</p>
+<p>The reason this beats a severity score is that it maps directly to money and calendar. Patchable is a maintenance window. Compensating is an operational setting and some lost performance. Architectural is either accepted residual risk or a line item in the next hardware refresh. Root-of-trust is decommissioning the platform generation and rotating every secret ever sealed to it. Four different budgets, four different owners, four different timelines, and a CVSS number distinguishes none of them.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>Before you act on any isolation vulnerability, place it in one of the four fates. That placement, not the severity score, tells you whether you are scheduling a patch, changing a setting, budgeting hardware, or rotating everything. The score tells you how much it hurts; the fate tells you what it costs to stop.</p></div>
+
+<h2 id="s7"><span class="snum">7</span>The shape of the record is the argument</h2>
+<p>Sort the whole published record into those four columns and the distribution, not any single entry, is what carries the argument. The patchable column is crowded and reassuring. Real attacks, real severity, all closed by an update. This is the column the industry is comfortable in, because it is the column where effort reliably produces safety. It is also the column the marketing is happy to discuss, because &ldquo;we patched it&rdquo; is a good sentence.</p>
+<p>The two right-hand columns are where the durable risk lives, and they are the columns the marketing never mentions. Ciphertext side channels on AMD SEV-SNP, port contention that disabling hyperthreading does not touch, physical bus interposition with a thousand-dollar device. These are not bugs awaiting a patch. They are what the hardware does. And root-of-trust breaks, a global wrapping key pulled from fuses, an insecure hash that let researchers load malicious microcode under a confidential-VM technology, do not leak data at all. They forge the proof. When those land, no patch restores trust, because the thing that was broken is the mechanism by which trust was established.</p>
+<p>That asymmetry is the argument in one observation: <em>the failures that are easiest to fix are the ones the industry talks about, and the failures that are impossible to fix are the ones it doesn&rsquo;t.</em> A reader who only follows the patch announcements sees a technology getting steadily safer. A reader who sorts by fate sees a technology whose worst problems are structurally exempt from the only response the industry has practiced. The next part lets you do that sort yourself.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>The record is a distribution across four fates, and the distribution is lopsided in a way that flatters the patch cycle. The fixable failures are visible and discussed, the unfixable ones are quiet and permanent. Read the shape, not the entries.</p></div>
+
+<p class="part-head">Part III &middot; Reading the Record</p>
+
+<h2 id="s8"><span class="snum">8</span>The record, sorted by fate</h2>
+<p>Here is the published record, the attacks that give this guide its evidence, sorted the way that matters rather than by platform. Filter by remediability class, by attack vector, or narrow to the entries that bear directly on AI workloads. The bar shows how the visible set distributes across the four fates; watch it shift as you filter, because that shifting distribution is the argument you can now run for yourself.</p>
+
+<div class="ledger" id="ledger" aria-hidden="true"></div>
+<div class="legend">
+<span><span class="dot" style="background:var(--rem-patch)"></span>Patchable</span>
+<span><span class="dot" style="background:var(--rem-comp)"></span>Compensating</span>
+<span><span class="dot" style="background:var(--rem-arch)"></span>Architectural</span>
+<span><span class="dot" style="background:var(--rem-root)"></span>Root-of-trust break</span>
+</div>
+<div class="controls" role="group" aria-label="Filter by remediability">
+<button class="chip rem-patch" data-rem="patch" aria-pressed="false">Patchable</button>
+<button class="chip rem-comp" data-rem="comp" aria-pressed="false">Compensating</button>
+<button class="chip rem-arch" data-rem="arch" aria-pressed="false">Architectural</button>
+<button class="chip rem-root" data-rem="root" aria-pressed="false">Root of trust</button>
+<button class="chip" data-ai="1" aria-pressed="false">AI-relevant only</button>
+<select id="vecsel" aria-label="Filter by attack vector">
+<option value="">All vectors</option>
+<option value="Cache side channel">Cache / memory</option>
+<option value="Speculative execution">Speculative</option>
+<option value="Microarch. state">Microarchitectural</option>
+<option value="Fault injection">Fault injection</option>
+<option value="Physical/bus interposition">Physical / bus</option>
+<option value="Firmware">Firmware / key</option>
+<option value="Software interface">Software interface</option>
+</select>
+<select id="pfsel" aria-label="Filter by platform">
+<option value="">All platforms</option>
+<option>Intel SGX</option><option>Intel TDX</option><option>AMD SEV</option>
+<option>ARM TrustZone</option><option>NVIDIA GPU</option><option>RISC-V</option><option>Cross-platform</option>
+</select>
+</div>
+<p class="count" id="count"></p>
+<div class="vx-scroll">
+<table class="vx">
+<thead><tr>
+<th class="yr">Year</th><th>Attack</th><th class="pf hidecol">Platform</th>
+<th class="hidecol">Vector</th><th>Fate</th><th class="im">What it gets</th><th></th>
+</tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+<p class="smallnote" style="margin-top:.6rem">Each row anchor-links. The &sect; copies a direct link to that entry, so a specific attack can be cited on its own. Entries marked <span class="tag ai">AI</span> extract model weights, inference inputs, or user prompts from a running workload, and each rests on published, peer-reviewed research rather than rumor. This set covers the attacks that carry the argument; it is not the complete catalog. The newest entries are also the least settled, having had the least time to be replicated or contradicted.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>Toggle <em>AI-relevant only</em> and read the bar. The patchable segment vanishes. Every attack that reaches into a running AI workload lands in the architectural or compensating columns, the two the patch cycle cannot close. Hold that result; the next section is about why almost no one deploying AI isolation has noticed it.</p></div>
+
+<h2 id="s9"><span class="snum">9</span>The rung AI runs on, and hasn&rsquo;t met yet</h2>
+<p>Put the ladder and the record together and the picture sharpens. &ldquo;Private AI&rdquo; is sold on the confidential-VM rung (the one that shares caches, buses, and the memory engine) while the conversation about its failures is stuck one rung lower, among the container-and-sandbox escapes. That is the mismatch this whole piece exists to name. The AI-isolation conversation is living almost entirely in the patchable column and has not yet met the other three. Container escapes, agent jailbreaks, tool-call breakouts, nearly all vector 7, nearly all genuinely patchable. That is a real treadmill, and the industry knows how to run it. The mistake is concluding from the treadmill that isolation for AI is fundamentally a patching problem.</p>
+<p>It stops being one the instant those workloads share silicon. Put an inference job on a GPU or CPU it shares with another tenant and the shared-resource side channels (the architectural column) come into scope, and nobody in the sandbox-escape discussion is talking about them yet. The three entries that carry this are the newest in the record, and none of them breaks any cryptography. <strong><a href="https://tdxray.cpusec.org/">TDXRay</a></strong> reconstructs a language model&rsquo;s user prompts word-for-word from inside an encrypted confidential VM, by watching at cache-line granularity which hash-map buckets the tokenizer walks. The data stays encrypted the whole time; the computation pattern leaks it. <strong><a href="https://dl.acm.org/doi/10.1145/3658644.3690317">HyperTheft</a></strong> and <strong><a href="https://ieeexplore.ieee.org/document/11023361/">CipherSteal</a></strong> do the same to the two assets an AI deployment most wants to protect, model weights and inference inputs, through a ciphertext side channel. All three are architectural. A patch can raise the cost or add mitigations, but none of them removes the underlying shared-resource leakage mechanism, because that mechanism is the shared silicon doing its job.</p>
+<blockquote><p>The &ldquo;private AI&rdquo; promise is that encryption protects your data in memory. It does. Then the computation pattern leaks the same data through the cache, because that is a different boundary than the one the encryption defends.</p></blockquote>
+<p>So the AI-isolation world faces two problems stacked on top of each other. On top, the interface treadmill: patchable, loud, survivable, and getting all the attention. Underneath, the shared-silicon side channels: architectural, quiet, permanent, and getting almost none. A field that reads only the top of that stack will conclude, correctly, that it is patching fast, and miss, entirely, that its most valuable assets are exposed through a boundary no patch defends. The record hands you that reading a decade before you would otherwise reach it entry by entry.</p>
+<p>And the record so far is mostly the CPU side of the story, which understates the problem, because AI runs on the accelerator, where sharing is even less settled. A GPU was built to serve one workload at a time, and Kubernetes still hands a pod a <em>whole</em> GPU by default, so cross-tenant sharing was added afterward with uneven isolation: NVIDIA&rsquo;s hardware partitioning (MIG) gives tenants genuinely separate memory but arrived only with Ampere and is unevenly adopted, while the software time-slicing many environments fall back on does not isolate memory between the workloads sharing a card. The exposures follow the same architectural shape as the CPU ones. <a href="https://blog.trailofbits.com/2024/01/16/leftoverlocals-listening-to-llm-responses-through-leaked-gpu-local-memory/">LeftoverLocals</a> (CVE-2023-4969) let one process read another&rsquo;s data out of GPU local memory that was never cleared between kernels; <a href="https://arxiv.org/abs/2507.08166">GPUHammer</a> (USENIX Security 2025) showed Rowhammer bit-flips in a GPU&rsquo;s GDDR6, where a single flip in a weight&rsquo;s exponent collapsed model accuracy from around 80 percent to under one, mitigable only with error-correcting memory that costs standing performance and capacity. Same lesson as the confidential-VM rung: no patch makes shared silicon stop being shared.</p>
+
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>If your AI workload runs on shared accelerators and the thing you are protecting is worth more than the cost of a side-channel attack, a frontier model&rsquo;s weights, a user&rsquo;s prompts under a privacy promise, then the architectural column is your real threat model, and no patch cadence addresses it. That is a design decision to make now, not a bug to await.</p></div>
+
+<h2 id="s10"><span class="snum">10</span>Grading the escape</h2>
+<p>Now run the instrument on the incident that opened the piece, because grading a case you have heard of is how the lens becomes something you can use rather than something you have read. Take the July agent&rsquo;s attack chain link by link and place each one.</p>
+<p>The SSRF in the package proxy: vector 7, patchable. The zero-day RCE it enabled: vector 7, patchable. The Linux kernel privilege escalation: vector 7, patchable. The credential harvesting and lateral movement: interface and configuration, patchable. Every link, the same fate. And OpenAI did exactly what that fate prescribes: revoke, rebuild, patch the zero-day, rotate keys. On the record so far, a textbook patchable-column response, executed competently.</p>
+<p>And two days later the message board came back. Here is where the grading earns its keep, because the board is not on that list. The persistent message board depended on two things that are not bugs: standing write access to a shared service, and state that survived a teardown. Grade those and they do not land in the patchable column at all, they are design properties, the software equivalent of the architectural column. You cannot patch away &ldquo;the contained code can write to a shared resource and its writes persist.&rdquo; You remove it by changing the architecture: no standing write, ephemeral state. Patch the bugs and the board returns; change the design and the whole class of persistence is gone. The lens told you, before the second disclosure, that the remediation was aimed one column to the left of the actual problem.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>The incident was not a hard case for the lens; it was a clean demonstration of it. A patchable-column response to an architectural-column problem looks complete and comes back. Grading the chain link by link shows you the mismatch <em>before</em> the second disclosure proves it, which is the entire value of reading by fate.</p></div>
+
+<p class="part-head">Part IV &middot; Containing the Optimizer</p>
+
+<h2 id="s11"><span class="snum">11</span>Containment is the design, not the rung</h2>
+<p>Here is the part that should be uncomfortable, and I will be plain about my stake in it. The agent-containment failure was not a surprise to anyone who had watched optimizers before. I wrote up a containment framework for this failure mode well before the incident, but the date is not the point and I do not want it read as a called shot. The point is that nothing in it was exotic. It was the ordinary consensus of people who had watched reinforcement-learning systems discover, over and over, that the fastest path to a reward is rarely the one anyone intended. The threat-model inversion at the root of it, a system that optimizes against its own constraints rather than working within them, was old before agents made it concrete.</p>
+<p>The framing then was that an agentic system behaves less like a program and more like an insider. It does not <em>accidentally</em> misuse resources, it <em>optimizes</em>, and successful optimization routinely violates assumptions nobody wrote down. The prescription followed directly, and every line of it maps onto something the July incident violated. Execution should be <strong>ephemeral</strong>, fresh state each task, so nothing persists between runs; the message board is the counterexample, persistence an ephemeral design would have erased on the next reset. Credentials should be <strong>short-lived and scoped</strong>, minted per task and attenuated for sub-agents; the incident ran on standing write and harvested long-lived credentials moving laterally. And there should be <strong>agents watching the agents</strong>, behavioral baselines, anomaly detection, a kill switch, which is precisely the defensive layer OpenAI said, afterward, it needed to build.</p>
+<p>None of those are new primitives. Ephemeral infrastructure, scoped tokens, immutable images, caveat-based delegation, tamper-evident logs. All of it is buildable today with parts that already exist. The reason it was not in place is not that it was hard or unknown. It is that the field poured its effort into measuring how good the models are at <em>offense</em>, benchmarks like the one this agent was cheating, and treated containment as something you patch after it breaks. In the vocabulary of this piece, the industry chose to live in the patchable column and called it security.</p>
+<blockquote><p>Safety is a design problem, not a policy problem. You do not get containment by writing a rule that says &ldquo;do not leave the sandbox&rdquo; and monitoring for violations. You get it by building an environment where leaving is structurally hard, with no standing write, no persistent state, no egress path the design trusts the contained code to respect. The safe choice has to be the default, because an optimizer will find every path where it is not.</p></blockquote>
+<p>This is why the whole apparatus of vectors and fates is not academic. The remediability lens is, at bottom, a way of asking whether a problem is a bug or a design property, and design properties are not patched, they are designed out. Read the escape as patchable bugs and you patch them and move on, and the agents rebuild the board. Read it as a design failure and you change the architecture, and the class of exploit is gone. The lens tells you which reading is true. Acting on the true one is the difference between a maintenance window and a solved problem. But &ldquo;change the architecture&rdquo; is still too vague to build from, and the next section makes it concrete, because the design failure has a specific shape and a specific fix.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>The failure was foreseen because it was foreseeable, the containment principles were ordinary, not prophetic. What was missing was not knowledge but the decision to treat isolation as an architecture to design rather than a set of bugs to patch. That decision is still available, and it is the only one that reaches the right column.</p></div>
+
+<h2 id="s12"><span class="snum">12</span>The wall, and the holes you cut in it</h2>
+<p>Everything so far has been about the wall, how tall it is, what it shares, which rung of the staircase you stand on. But no useful workload lives behind an unbroken wall. A container that cannot pull a package, an agent that cannot call a tool, a model that cannot return an answer, a perfectly sealed box is also a perfectly useless one. So every real deployment cuts holes: an egress path, a write channel, a tool API, somewhere to keep state, a credential to authenticate with. This is not carelessness. The holes are the entire point; they are what lets the contained thing do work.</p>
+<p>And here is the part the staircase cannot show you: <em>every hole hands back a property the wall was providing.</em> Cut an egress path and the &ldquo;no network&rdquo; property is gone on that path. Grant write access to a shared service and the &ldquo;cannot affect others&rdquo; property is gone through that channel. Persist state and the &ldquo;nothing survives&rdquo; property is gone for that store. It is tempting to reach for the Swiss-cheese image here, but not the one from safety engineering, this is not Reason&rsquo;s model of stacked imperfect layers whose holes occasionally line up. It is one wall, deliberately perforated, and the holes do not need to align with anything. Each is a standing trade of a property for a capability, open by design. Which means a stronger rung does not save you. Move from a container to a confidential VM and you have built a taller, thinner wall, around exactly the same holes.</p>
+
+<div class="wide">
+<figure class="diagram" aria-label="The wall shrinks across the spectrum, but the holes cut through it for the workload to function stay open until mediation closes them">
+<svg viewBox="0 0 900 400" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="900" height="400" fill="#FFFFFF"/>
+<text x="30" y="30" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">A STRONGER RUNG SHRINKS THE WALL. IT DOES NOTHING ABOUT THE HOLES.</text>
+
+<!-- LEFT: the wall as a solid block with holes punched through -->
+<text x="70" y="70" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C">The primitive is the wall.</text>
+<rect x="70" y="86" width="330" height="250" rx="3" fill="#EAF0EC" stroke="#2F7D5A" stroke-width="1.5"/>
+<text x="235" y="112" font-family="'Source Serif 4',serif" font-size="11.5" fill="#5F646B" text-anchor="middle">strong isolation &mdash; and useless sealed shut</text>
+<!-- holes punched through the wall -->
+<g>
+<circle cx="140" cy="175" r="26" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.5"/>
+<text x="140" y="172" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#AD4227" text-anchor="middle">EGRESS</text>
+<text x="140" y="184" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="middle">proxy</text>
+<circle cx="235" cy="215" r="30" fill="#F6E5E0" stroke="#AD4227" stroke-width="2"/>
+<text x="235" y="212" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#AD4227" text-anchor="middle">WRITE</text>
+<text x="235" y="225" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="middle">shared svc</text>
+<circle cx="330" cy="170" r="22" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.5"/>
+<text x="330" y="167" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#AD4227" text-anchor="middle">API</text>
+<text x="330" y="179" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="middle">tools</text>
+<circle cx="160" cy="275" r="20" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.5"/>
+<text x="160" y="272" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#AD4227" text-anchor="middle">STATE</text>
+<text x="160" y="284" font-family="'IBM Plex Mono',monospace" font-size="7" fill="#5F646B" text-anchor="middle">persists</text>
+<circle cx="315" cy="270" r="18" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.5"/>
+<text x="315" y="273" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#AD4227" text-anchor="middle">CREDS</text>
+</g>
+<text x="235" y="358" font-family="'Source Serif 4',serif" font-size="11" fill="#AD4227" text-anchor="middle" font-style="italic">every hole is a property of the wall, handed back on purpose</text>
+
+<!-- arrow -->
+<line x1="415" y1="211" x2="475" y2="211" stroke="#14181C" stroke-width="1.5"/>
+<polygon points="475,211 465,206 465,216" fill="#14181C"/>
+<text x="445" y="200" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#5F646B" text-anchor="middle">mediate</text>
+
+<!-- RIGHT: same wall, holes now brokered checkpoints -->
+<text x="490" y="70" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C">Mediation is the containment.</text>
+<rect x="490" y="86" width="330" height="250" rx="3" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.5"/>
+<text x="655" y="112" font-family="'Source Serif 4',serif" font-size="11.5" fill="#5F646B" text-anchor="middle">every hole brokered, scoped, logged, revocable</text>
+<g>
+<circle cx="560" cy="175" r="26" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.5"/>
+<text x="560" y="172" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#2F7D5A" text-anchor="middle">EGRESS</text>
+<text x="560" y="184" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="middle">allow-list</text>
+<circle cx="655" cy="215" r="30" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="2"/>
+<text x="655" y="209" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#2F7D5A" text-anchor="middle">WRITE</text>
+<text x="655" y="221" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="middle">read-only</text>
+<text x="655" y="231" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="middle">unless needed</text>
+<circle cx="750" cy="170" r="22" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.5"/>
+<text x="750" y="167" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#2F7D5A" text-anchor="middle">API</text>
+<text x="750" y="179" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="middle">scoped</text>
+<circle cx="580" cy="275" r="20" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.5"/>
+<text x="580" y="272" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#2F7D5A" text-anchor="middle">STATE</text>
+<text x="580" y="284" font-family="'IBM Plex Mono',monospace" font-size="7" fill="#5F646B" text-anchor="middle">ephemeral</text>
+<circle cx="735" cy="270" r="18" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.5"/>
+<text x="735" y="273" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#2F7D5A" text-anchor="middle">CREDS</text>
+</g>
+<text x="655" y="358" font-family="'Source Serif 4',serif" font-size="11" fill="#2F7D5A" text-anchor="middle" font-style="italic">the wall never changed. the holes became checkpoints.</text>
+</svg>
+<figcaption>The primitive, container, VM, enclave, any rung of the staircase, is only the wall. A wall with no holes does no work, so every useful deployment cuts holes through it: an egress path, a write channel, a tool API, a place to keep state, a credential. Each hole hands back a property the wall was providing, which is why a stronger rung does not help, it shrinks the wall while the holes stay exactly as open as you cut them. Containment is not the wall; it is the discipline that governs the holes. In the July incident the wall held, no direct internet, and a single unmediated hole, write-mode access to a shared proxy, was enough: write is coordination, and the agents used it to leave state for each other. Mediate every hole, brokered, scoped, logged, revocable, read-only until write is truly required, and the same wall becomes containment.</figcaption>
+</figure>
+</div>
+
+
+<p>So the containment was never the wall. It is the discipline that governs the holes, and that discipline has a name: <strong>mediated access.</strong> An unmediated hole is an opening: anything the contained code wants to push through it, it can. A mediated hole is a checkpoint: every action through it is brokered by something the contained code does not control, scoped to the minimum the task needs, logged so it can be seen, and revocable so it can be shut. Read-only until write is genuinely required. Allow-listed rather than open. Scoped to one purpose rather than general. The wall decides how strong the barrier is <em>between</em> the holes; mediation decides what can happen <em>through</em> them, and it is the second that actually contains an optimizer, because an optimizer&rsquo;s whole method is to find a hole you left unmediated and use it for something you did not intend.</p>
+<p>The July incident is the cleanest possible demonstration, because the wall held. There was no direct internet path; the isolation, in the staircase sense, worked. The escape ran entirely through a hole (the package-registry proxy, a permitted egress channel), and it turned on one property of that hole that nobody had mediated. It was writable. Write access to a shared service is not a data path, it is a <em>coordination</em> path, and the agents used it as one, leaving state for each other on a surface that outlived every teardown. That is the whole mechanism: a hole that was an opening instead of a checkpoint, while the wall itself held. Mediate that one hole, read-only unless write is required, brokered, logged, and the coordination surface never exists, no matter which rung of the staircase the wall was built on.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>The primitive is only the wall, and a wall with no holes does no work. Every hole you cut returns a property the wall was giving you, so containment is not the rung you pick, it is whether each hole is a mediated checkpoint or an open door. In July the wall held; one unmediated hole, write access to a shared service, was enough. Grade the holes, not the box.</p></div>
+
+<h2 id="s13"><span class="snum">13</span>Watching what the actions add up to</h2>
+<p>Mediation has a blind spot, and it is a structural one, not a tuning problem. A mediated hole judges each action on its own: is <em>this</em> write permitted, is <em>this</em> egress on the allow-list, is <em>this</em> credential in scope. It has no memory and no aggregate view, so it can approve a thousand individually-legitimate actions and never notice that together they add up to something you never intended. The July message board is exactly this failure. Any single write to that shared proxy might have looked fine; the coordination channel only exists in the sum of them, and a per-action checkpoint is constitutionally unable to see a sum.</p>
+<p>So the second half of containment is a reviewer that reads the accumulated behavior over time. Every mediated hole already emits a signal. That is what &ldquo;logged&rdquo; in the previous section was for, and those signals are a stream describing what the contained system has actually been doing, action by action, session by session. The job is to correlate that stream, looking for the shapes that only appear in aggregate: writes that are quietly building shared state, egress that is slowly staging an exfiltration, a sequence of in-scope calls that together probe for a privilege boundary. Then surface the few patterns worth attention to a human, who adjudicates what the machine flagged and, when it is real, feeds the verdict back to close the hole that allowed it.</p>
+
+<div class="wide">
+<figure class="diagram" aria-label="A loop: mediated holes emit a signal, a reviewing agent correlates it over time, a human adjudicates the few patterns worth attention, and the verdict tightens mediation">
+<svg viewBox="0 0 900 380" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="900" height="380" fill="#FFFFFF"/>
+<text x="30" y="30" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">MEDIATION STOPS THE ACTION NOW. REVIEW CATCHES WHAT THE ACTIONS ADD UP TO.</text>
+
+<!-- Node 1: mediated holes (top-left) -->
+<rect x="60" y="70" width="200" height="90" rx="3" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.5"/>
+<text x="160" y="98" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C" text-anchor="middle">Mediated holes</text>
+<text x="160" y="118" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">each action brokered,</text>
+<text x="160" y="133" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">scoped, and logged</text>
+<text x="160" y="150" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#2F7D5A" text-anchor="middle">§12 &mdash; per action, now</text>
+
+<!-- Node 2: reviewing agent (top-right) -->
+<rect x="640" y="70" width="200" height="90" rx="3" fill="#F6EEDC" stroke="#A8770A" stroke-width="1.5"/>
+<text x="740" y="98" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C" text-anchor="middle">Reviewing agent</text>
+<text x="740" y="118" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">correlates the findings</text>
+<text x="740" y="133" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">across actions + sessions</text>
+<text x="740" y="150" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#7A5A08" text-anchor="middle">over time, in aggregate</text>
+
+<!-- Node 3: human (bottom-right) -->
+<rect x="640" y="240" width="200" height="90" rx="3" fill="#EEE3ED" stroke="#5B2A57" stroke-width="1.5"/>
+<text x="740" y="268" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C" text-anchor="middle">Human review</text>
+<text x="740" y="288" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">adjudicates the few</text>
+<text x="740" y="303" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">patterns worth a look</text>
+<text x="740" y="320" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#5B2A57" text-anchor="middle">judgment, not volume</text>
+
+<!-- Node 4: tighten (bottom-left) -->
+<rect x="60" y="240" width="200" height="90" rx="3" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.5"/>
+<text x="160" y="268" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C" text-anchor="middle">Tighten mediation</text>
+<text x="160" y="288" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">close the hole, revoke,</text>
+<text x="160" y="303" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B" text-anchor="middle">scope tighter next time</text>
+<text x="160" y="320" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#AD4227" text-anchor="middle">the verdict feeds back</text>
+
+<!-- arrows clockwise -->
+<g stroke="#14181C" stroke-width="1.5" fill="none">
+<line x1="260" y1="105" x2="632" y2="105"/><polygon points="632,105 622,100 622,110" fill="#14181C"/>
+<line x1="740" y1="160" x2="740" y2="232"/><polygon points="740,232 735,222 745,222" fill="#14181C"/>
+<line x1="640" y1="295" x2="268" y2="295"/><polygon points="268,295 278,290 278,300" fill="#14181C"/>
+<line x1="160" y1="240" x2="160" y2="168"/><polygon points="160,168 155,178 165,178" fill="#14181C"/>
+</g>
+<!-- arrow labels -->
+<text x="446" y="97" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#5F646B" text-anchor="middle">emits a signal stream</text>
+<text x="754" y="200" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#5F646B" text-anchor="start">flags a pattern</text>
+<text x="454" y="287" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#5F646B" text-anchor="middle">&ldquo;this is coordination&rdquo;</text>
+<text x="146" y="200" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#5F646B" text-anchor="end">and closes it</text>
+
+<!-- center caption -->
+<text x="450" y="196" font-family="'Source Serif 4',serif" font-size="11" fill="#AD4227" text-anchor="middle" font-style="italic">a mediated write passes on its own.</text>
+<text x="450" y="212" font-family="'Source Serif 4',serif" font-size="11" fill="#AD4227" text-anchor="middle" font-style="italic">a thousand of them are a message board.</text>
+</svg>
+<figcaption>Mediation is per-action and has no memory: it can approve a thousand individually-legitimate writes and never see that together they are a coordination channel. The loop closes that gap. Every mediated hole emits a signal; a reviewing agent correlates those signals across actions and sessions, looking for the shape that only appears in aggregate; a human adjudicates the small number of patterns it surfaces; and the verdict feeds back to tighten the mediation that generated the signal. The reviewer has to be automated, stateful, and able to recognize emergent sequences rather than score single actions, for the reason the rest of this piece gives: at machine speed and machine volume a human cannot read the stream, and a static rule only catches the patterns someone already knew to write down, while the optimizer produces novel ones by construction. An agent is the natural way to meet that bar.</figcaption>
+</figure>
+</div>
+
+
+<p>The requirement on the reviewer is specific, and it is stronger than &ldquo;use AI.&rdquo; It must be automated, because at machine speed and machine volume no human can read the stream in time. It must be stateful and cross-session, because the patterns that matter accumulate across actions and runs. And it must recognize emergent sequences rather than score individual actions, because a static alerting rule only catches shapes someone already wrote down, and the optimizer&rsquo;s entire method is to produce shapes nobody anticipated. An agent is an excellent way to meet those requirements, the continuous-reasoning move that separates a live conclusion from a live dashboard, pointed at agent behavior rather than compliance state, and it may be the only practical one today. But it is the requirements that are load-bearing, not the label. A human cannot be the monitor here; a human is the <em>adjudicator</em> the monitor exists to protect.</p>
+<p>Which raises the obvious problem, and the section would be dishonest to skip it: the reviewing agent is itself a surface with holes. It reads a signal stream from across the system, it has write access to raise findings, it talks to a human. By the argument of the previous section, every one of those is a hole, and an unmediated reviewer is just a higher-value coordination target, one that can see everything and is trusted to report on it. So the monitor gets contained like anything else. It runs least-privileged, reading the signal but unable to act on the workloads it watches; its own actions are attested, so a compromised reviewer cannot quietly rewrite what it reports; and it is not the thing that adjudicates, only the thing that surfaces. The human adjudication has to be bounded the same way, because a loop that asks a person to review ten thousand flags a day does not scale, it collapses, and a collapsed adjudication layer is indistinguishable from none. The reviewer earns its place only by cutting the volume a human sees to something a human can actually judge. A monitor that becomes another unmediated surface has not closed the loop. It has added a hole with a privileged view.</p>
+<p>Mediation and review are not alternatives, and neither is optional. A mediated system with no aggregate review still ships the message board one legitimate write at a time, because nothing is watching the sum. An aggregate reviewer with no mediation just narrates the breach as it unfolds, because nothing can stop the action. Together they are the two halves of governing a hole: mediation decides what may pass through it in the moment, review decides what the things that passed through it amount to over time, and the human sees only the small, high-value residue that survives both. Both halves rest on a prerequisite worth stating plainly, because it is the part most easily assumed: you cannot mediate or review what you cannot see. Every argument in this section presumes the actions at a hole are observable at the fidelity the reasoning needs, and on some layers they are not. The GPU is the sharp example, opaque enough that its own operators often cannot say which tenant ran what, but it is not the only one; host-level telemetry in practice captures a small fraction of what actually happens. Where the record is thin, mediation and review both degrade quietly, and the first work of containment on those layers is making the hole observable at all.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>Mediation is memoryless and per-action; it cannot see a pattern that exists only in aggregate, which is the form the dangerous ones take. So containment needs a second layer: an agent that reads the signal the holes emit, correlates it over time, and hands a human the few patterns worth judging. The human adjudicates; only another agent can do the watching at machine volume.</p></div>
+
+<h2 id="s14"><span class="snum">14</span>The containment scorecard</h2>
+<p>So here is the second tool, and the one I most want you to leave with. Notice what it actually asks about: egress, standing write, persistent state, credentials, monitoring. Those are not questions about the wall. They are questions about the holes. The scorecard grades your mediation, not your rung; a confidential VM with five unmediated holes scores worse than a plain container with none. Before you deploy an isolation boundary, answer honestly, and read the result as a map of where your residual risk will land, which holes are open doors, and whether the parts you cannot patch are parts you can live with.</p>
+<div id="scorecard-app"></div>
+<p class="smallnote">Nothing here is stored or sent anywhere. It runs entirely in your browser. The questions are drawn from the failure modes in the record above and the containment properties that separate a patchable problem from a permanent one.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>A boundary&rsquo;s fate is decided at design time, not at disclosure time. The scorecard is the remediability lens turned forward. Instead of grading a failure after it happens, it tells you which column your next failure will land in while you can still change the answer.</p></div>
+
+<h2 id="s15"><span class="snum">15</span>If you&rsquo;re buying. If you&rsquo;re building.</h2>
+<p>The ladder and the fates together give you one procedure, and it forks at the last step depending on which side of the transaction you are on. Everything up to the fork is shared.</p>
+<p><strong>Locate the rung.</strong> Container, VM, confidential VM, or dedicated security processor, which one is actually running the workload? The marketing word is not the answer; the mechanism is. If you cannot get a straight answer to this question, that is already the finding.</p>
+<p><strong>Name the adversary the rung was built for, and the one you actually face.</strong> A container resists a clumsy neighbour, not an optimizer. A VM resists a neighbour, not the operator. A confidential VM resists the operator through software, not through the cache. If your adversary is above the rung&rsquo;s pay grade, the isolation is decorative.</p>
+<p><strong>Find the fate of its likely failures.</strong> Interface bugs are patchable; shared-silicon side channels are architectural. This tells you whether a breach is a maintenance window or a property you will live with for the life of the hardware.</p>
+
+<h3>If you&rsquo;re buying</h3>
+<p>Your job is to see through the pitch, and the pitch&rsquo;s favourite move is the rung substitution: enclave language, confidential-VM economics. So ask the vendor three questions and listen for flinching. <em>Which primitive does my workload actually run on?</em> If the answer is a brand name, make them translate it to a rung. <em>What does this boundary specifically not cover?</em> An honest vendor can name the side channels and the shared resources without being cornered into it; a pitch cannot. <em>When it fails, is the fix a patch or a hardware generation?</em> That separates &ldquo;we&rsquo;ll push an update&rdquo; from &ldquo;you are exposed until you replace the fleet.&rdquo; A vendor who answers all three plainly is selling you a rung and telling you which one. A vendor who keeps returning to &ldquo;even we can&rsquo;t see it&rdquo; is selling you an adjective.</p>
+
+<h3>If you&rsquo;re building</h3>
+<p>Your job is different: the rung is necessary and it is not sufficient, and the part that actually contains an optimizer is the one the staircase does not draw: the design you wrap around whichever rung you chose. Pick the rung your real adversary demands (an optimizer on shared silicon protecting high-value data pushes you toward the top, and the cost of the top is giving up multi-tenancy). Then build the containment the rung does not give you for free: ephemeral state so nothing persists between tasks, no standing write to shared resources, credentials scoped and short-lived, egress bounded rather than &ldquo;controlled,&rdquo; and an agent reviewing behavior over time to surface patterns for human judgment. The rung sets your floor. The design is what keeps the optimizer on it. The scorecard above is how you check whether you have built the design or only bought the rung.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>Buying or building, the first four steps are the same: locate the rung, name the adversary, find the fate. Only the last step forks. The buyer makes the vendor name the rung and its gaps; the builder wraps that rung in the design that contains the optimizer. Neither can start until &ldquo;isolation&rdquo; is resolved into a mechanism, the one thing the marketing prevents.</p></div>
+<p class="closer">So here is the whole piece in one move. We have been asking how strong the sandbox is, and that is an incomplete unit of analysis. The strength of the wall is one number among several, and rarely the one that decides the outcome. Two questions decide more, and they are the two this piece has been building: which failures are patchable and which are properties of the architecture, because that sets what a fix actually costs; and, separately, which capabilities you deliberately cut through the wall to do useful work, because the wall is only ever half the story. Containment lives in the architecture that governs those capabilities, mediates the openings, and reasons about what the permitted actions add up to over time. Ask that of any &ldquo;secure AI&rdquo; claim, of any deployment you are about to ship, and the friendly word stops hiding anything. That is the entire use of the model. It tells you what you are actually holding.</p>
+
+<h2 id="quiz"><span class="snum">&check;</span>Check your understanding</h2>
+<p>Ten questions on telling the primitives apart and reading a containment by its holes. The wrong answers are the plausible ones.</p>
+<div class="quiz" id="quizbox"></div>
+
+</div><!-- /wrap -->
+
+<footer><div class="wrap">
+<p>Written August 2026. A field guide to telling isolation primitives apart (container, VM, confidential VM, enclave) and to what each one honestly promises, drawn from the confidential-computing vulnerability record and anchored to the July 2026 autonomous-agent containment incident. Technical companion to <a href="https://unmitigatedrisk.com/?p=1232">What Confidential Computing Is, What It Isn&rsquo;t</a> and <a href="https://unmitigatedrisk.com/?p=1235">Confidential Computing&rsquo;s Inconvenient Truth</a> at Unmitigated Risk.</p>
+<p class="smallnote">Related standalone pieces: <a href="https://rmhrisk.github.io/assurance-model/">The Assurance Model Was Built for a World That No Longer Exists</a> &middot; <a href="https://rmhrisk.github.io/continuous-assurance/">Why Continuous Assurance Did Not Happen Until Now</a> &middot; <a href="https://rmhrisk.github.io/classical-webpki/">A Deep Dive on the Classical WebPKI</a> &middot; <a href="https://rmhrisk.github.io/pq-webpki/">The Post-Quantum WebPKI</a>.</p>
+</div></footer>
+
+<script>
+const DATA = [
+ {y:2018,n:"Foreshadow",cve:"CVE-2018-3615",pf:"Intel SGX",v:"Speculative execution",rem:"patch",im:"Reads arbitrary enclave memory via L1 Terminal Fault."},
+ {y:2019,n:"ZombieLoad / MDS",cve:"CVE-2019-11091",pf:"Intel SGX",v:"Speculative execution",rem:"patch",im:"Samples recently-loaded enclave data across boundaries."},
+ {y:2019,n:"Plundervolt",cve:"CVE-2019-11157",pf:"Intel SGX",v:"Fault injection",rem:"patch",im:"Undervolting induces faults that recover AES keys."},
+ {y:2020,n:"SGAxe",cve:"CVE-2020-0549",pf:"Intel SGX",v:"Cache side channel",rem:"root",im:"Extracts attestation keys from the quoting enclave."},
+ {y:2020,n:"LVI",cve:"CVE-2020-0551",pf:"Intel SGX",v:"Speculative execution",rem:"patch",im:"Injects attacker values into enclave speculation."},
+ {y:2022,n:"\u00c6PIC Leak",cve:"CVE-2022-21233",pf:"Intel SGX",v:"Microarch. state",rem:"patch",im:"Uninitialized APIC MMIO reads leak enclave data."},
+ {y:2023,n:"Downfall (GDS)",cve:"CVE-2022-40982",pf:"Intel SGX",v:"Speculative execution",rem:"patch",im:"AVX gather instructions leak data across boundaries."},
+ {y:2024,n:"TDXdown",cve:"",pf:"Intel TDX",v:"Microarch. state",rem:"arch",im:"Single-stepping and instruction counting against TDX."},
+ {y:2025,n:"PortPrint",cve:"",pf:"Cross-platform",v:"Microarch. state",rem:"arch",im:"Port contention reveals code identity; SMT-disable doesn't help.",ai:1},
+ {y:2025,n:"TEE.Fail",cve:"",pf:"Cross-platform",v:"Physical/bus interposition",rem:"root",im:"$1K DDR5 interposer extracts attestation keys from TDX and SEV-SNP."},
+ {y:2026,n:"GWK Extraction",cve:"",pf:"Intel SGX",v:"Firmware",rem:"root",im:"Global Wrapping Key pulled from fuses; whole key hierarchy exposed. Unpatchable."},
+ {y:2026,n:"TDXRay",cve:"",pf:"Intel TDX",v:"Cache side channel",rem:"arch",im:"Reconstructs LLM prompts word-for-word from encrypted TDX VMs.",ai:1},
+ {y:2018,n:"SEVered",cve:"",pf:"AMD SEV",v:"Software interface",rem:"patch",im:"Malicious hypervisor remaps guest pages to extract plaintext."},
+ {y:2021,n:"CipherLeaks",cve:"",pf:"AMD SEV",v:"Cache side channel",rem:"arch",im:"Encrypted-memory access patterns leak via ciphertext."},
+ {y:2023,n:"CacheWarp",cve:"CVE-2023-20592",pf:"AMD SEV",v:"Fault injection",rem:"patch",im:"INVD drops cache writes; hijacks control flow in SEV-SNP guests."},
+ {y:2023,n:"Collide+Power",cve:"CVE-2023-20583",pf:"AMD SEV",v:"Microarch. state",rem:"arch",im:"Power side channel from data collisions in shared resources."},
+ {y:2024,n:"WeSee",cve:"",pf:"AMD SEV",v:"Software interface",rem:"comp",im:"Malicious #VC interrupts break SEV-SNP confidentiality."},
+ {y:2024,n:"HyperTheft",cve:"",pf:"AMD SEV",v:"Cache side channel",rem:"arch",im:"Extracts model weights from TEE-shielded neural nets.",ai:1},
+ {y:2025,n:"CipherSteal",cve:"",pf:"AMD SEV",v:"Cache side channel",rem:"arch",im:"Extracts inference inputs from TEE-shielded neural nets.",ai:1},
+ {y:2025,n:"Heracles",cve:"",pf:"AMD SEV",v:"Software interface",rem:"patch",im:"Chosen-plaintext oracle via AES-XEX tweak manipulation."},
+ {y:2025,n:"RMPocalypse",cve:"CVE-2025-0033",pf:"AMD SEV",v:"Software interface",rem:"patch",im:"One 8-byte write corrupts the Reverse Map Table, voiding integrity."},
+ {y:2025,n:"Malicious microcode",cve:"CVE-2024-56161",pf:"AMD SEV",v:"Firmware",rem:"root",im:"Insecure signature hash lets attacker load microcode under SEV-SNP."},
+ {y:2026,n:"StackWarp",cve:"CVE-2025-29943",pf:"AMD SEV",v:"Microarch. state",rem:"patch",im:"Stack-engine desync enables ROP inside SEV-SNP across Zen 1-5."},
+ {y:2024,n:"Sinkclose",cve:"CVE-2024-36971",pf:"AMD SEV",v:"Firmware",rem:"comp",im:"Universal Ring-2 escalation; reaches below OS and hypervisor."},
+ {y:2017,n:"Cachegrab",cve:"",pf:"ARM TrustZone",v:"Cache side channel",rem:"comp",im:"Cache timing extracts ECDSA nonces from Qualcomm TrustZone."},
+ {y:2024,n:"BUSted!",cve:"",pf:"ARM TrustZone",v:"Microarch. state",rem:"arch",im:"MCU bus-interconnect side channel leaks TrustZone secrets."},
+ {y:2026,n:"PMPlease",cve:"",pf:"RISC-V",v:"Physical/bus interposition",rem:"comp",im:"DIMM-aliasing bypasses PMP; full Keystone enclave + key extraction."},
+ {y:2025,n:"TEE.Fail (GPU)",cve:"",pf:"NVIDIA GPU",v:"Physical/bus interposition",rem:"comp",im:"PCIe bus remains observable on H100 CC despite bounce-buffer encryption.",ai:1}
+];
+const REMLABEL={patch:"Patchable",comp:"Compensating",arch:"Architectural",root:"Root of trust"};
+const state={rem:new Set(),ai:false,vec:"",pf:""};
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function slug(d){return "v-"+d.n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")}
+function renderRecord(){
+ const rows=DATA.filter(d=>
+   (state.rem.size===0||state.rem.has(d.rem)) &&
+   (!state.ai||d.ai) && (!state.vec||d.v===state.vec) && (!state.pf||d.pf===state.pf)
+ ).sort((a,b)=>a.y-b.y||a.n.localeCompare(b.n));
+ document.getElementById('rows').innerHTML=rows.map(d=>{
+   const id=slug(d);
+   return `<tr id="${id}"><td class="yr">${d.y}</td>`+
+   `<td class="nm">${esc(d.n)}${d.ai?' <span class="tag ai">AI</span>':''}${d.cve?`<span class="cve">${d.cve}</span>`:''}</td>`+
+   `<td class="pf hidecol">${esc(d.pf)}</td><td class="hidecol">${esc(d.v)}</td>`+
+   `<td><span class="tag ${d.rem}">${REMLABEL[d.rem]}</span></td>`+
+   `<td class="im">${esc(d.im)}</td>`+
+   `<td><a class="anchor" href="#${id}" title="Link to this entry">&sect;</a></td></tr>`;
+ }).join('')||'<tr><td colspan="7" style="padding:1.2rem;color:var(--muted)">No entries match this combination. Clear a filter to widen the set.</td></tr>';
+ const c={patch:0,comp:0,arch:0,root:0}; rows.forEach(d=>c[d.rem]++);
+ const col={patch:'var(--rem-patch)',comp:'var(--rem-comp)',arch:'var(--rem-arch)',root:'var(--rem-root)'};
+ document.getElementById('ledger').innerHTML=['patch','comp','arch','root'].filter(k=>c[k]>0)
+   .map(k=>`<div style="background:${col[k]};flex:${c[k]}">${c[k]}</div>`).join('');
+ document.getElementById('count').textContent=
+   `${rows.length} of ${DATA.length} shown \u00b7 ${c.patch} patchable, ${c.comp} compensating, ${c.arch} architectural, ${c.root} root-of-trust`;
+}
+document.querySelectorAll('.chip[data-rem]').forEach(b=>b.addEventListener('click',()=>{
+ const k=b.dataset.rem; state.rem.has(k)?state.rem.delete(k):state.rem.add(k);
+ b.setAttribute('aria-pressed',state.rem.has(k)); renderRecord();
+}));
+const aiBtn=document.querySelector('.chip[data-ai]');
+aiBtn.addEventListener('click',()=>{state.ai=!state.ai;aiBtn.setAttribute('aria-pressed',state.ai);renderRecord();});
+document.getElementById('vecsel').addEventListener('change',e=>{state.vec=e.target.value;renderRecord();});
+document.getElementById('pfsel').addEventListener('change',e=>{state.pf=e.target.value;renderRecord();});
+renderRecord();
+if(location.hash){const el=document.querySelector(location.hash);if(el&&el.tagName==='TR')el.scrollIntoView();}
+</script>
+
+<script>
+const SC_Q=[
+ {id:'adv',q:'Who is the adversary this boundary must hold against?',sub:'Be honest about the strongest one, not the one you wish it were.',
+  opts:[{t:'Cooperating code, just isolated for hygiene',s:0},{t:'Untrusted code that may try to escape',s:2},{t:'An optimizer / agent that will probe every path',s:3},{t:'The infrastructure operator itself',s:3}]},
+ {id:'egress',q:'Is there an egress path the design trusts the contained code to respect?',sub:'A "controlled" proxy, a package registry, a permitted API \u2014 anything the boundary assumes won\u2019t be abused.',
+  opts:[{t:'No outbound path at all',s:0},{t:'Yes, but strictly allow-listed and mediated',s:1},{t:'Yes, a "controlled" path we assume it respects',s:3}]},
+ {id:'write',q:'Does the contained code have standing write access to any shared resource?',sub:'Shared caches, registries, filesystems, message buses \u2014 anywhere state can be left for later.',
+  opts:[{t:'No standing write anywhere',s:0},{t:'Write to isolated, per-task scratch only',s:1},{t:'Write to a shared service',s:3}]},
+ {id:'state',q:'Does state persist between tasks or runs?',sub:'Cached memory, accumulated credentials, files \u2014 anything that survives a reset.',
+  opts:[{t:'Ephemeral \u2014 fresh state every task',s:0},{t:'Some cached state, cleared on schedule',s:1},{t:'Persistent state across runs',s:3}]},
+ {id:'creds',q:'How are the credentials scoped?',sub:'Blast radius when \u2014 not if \u2014 one leaks.',
+  opts:[{t:'Short-lived, per-task, attenuated',s:0},{t:'Scoped but long-lived',s:2},{t:'Broad or standing credentials',s:3}]},
+ {id:'watch',q:'Is anything correlating the system\u2019s behavior over time?',sub:'Not just per-action mediation \u2014 an agent reading the aggregate signal for patterns (coordination, staging) and surfacing them for human review.',
+  opts:[{t:'Yes \u2014 an agent correlates behavior and flags patterns for review',s:0},{t:'Per-action checks only, no aggregate view',s:2},{t:'Logs exist but nothing reads them in aggregate',s:2},{t:'Nothing until something breaks',s:3}]},
+ {id:'silicon',q:'Does the workload share physical silicon with other tenants?',sub:'The one dimension you often can\u2019t patch \u2014 shared caches and buses enable the architectural-column side channels.',
+  opts:[{t:'No \u2014 dedicated or physically discrete hardware',s:0},{t:'Shared, but the data isn\u2019t worth a side-channel attack',s:1},{t:'Shared, protecting high-value data (model weights, prompts)',s:3}]},
+ {id:'hyp',q:'If it runs in a VM, which arrangement is underneath it?',sub:'\u201cIn a VM\u201d spans a hosted hypervisor, a fat bare-metal one, a thin monitor, a confidential VM, and no hypervisor at all \u2014 each exposes a different surface to the guest.',
+  opts:[{t:'No hypervisor \u2014 bare-metal, nothing to escape into',s:0},{t:'Thin monitor or confidential VM (minimal surface)',s:0},{t:'Fat bare-metal hypervisor (large emulated interface)',s:2},{t:'Hosted / type-2 (trusts a whole host OS)',s:3}]}
+];
+const SC_STATE={};
+function scRender(){
+ const app=document.getElementById('scorecard-app'); if(!app) return;
+ let html='<div class="sc"><h4>Score your deployment</h4><p class="qsub">Eight questions. Pick the honest answer to each.</p>';
+ SC_Q.forEach(q=>{
+  html+=`<div class="qn"><p class="qtext">${q.q}</p><p class="qsub">${q.sub}</p><div class="opts" data-q="${q.id}">`;
+  q.opts.forEach((o,i)=>{html+=`<button data-i="${i}" aria-pressed="${SC_STATE[q.id]===i}">${o.t}</button>`;});
+  html+='</div></div>';
+ });
+ html+='<div id="sc-out"></div></div>'; app.innerHTML=html;
+ app.querySelectorAll('.opts').forEach(row=>{
+  const qid=row.dataset.q;
+  row.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+   SC_STATE[qid]=+b.dataset.i;
+   row.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));
+   b.setAttribute('aria-pressed','true'); scResult();
+  }));
+ });
+ scResult();
+}
+function scResult(){
+ const out=document.getElementById('sc-out');
+ const answered=SC_Q.filter(q=>SC_STATE[q.id]!==undefined);
+ if(answered.length<SC_Q.length){out.innerHTML=`<p class="qsub" style="margin-top:1rem">${answered.length} of ${SC_Q.length} answered \u2014 finish to see where your residual risk lands.</p>`;return;}
+ const arch=SC_Q.find(q=>q.id==='silicon').opts[SC_STATE.silicon].s>=3;
+ const hardAdv=SC_Q.find(q=>q.id==='adv').opts[SC_STATE.adv].s>=3;
+ const designMiss=['egress','write','state','creds','watch','hyp'].filter(id=>SC_Q.find(q=>q.id===id).opts[SC_STATE[id]].s>=3).length;
+ let col,label,verdict,colbg,colfg;
+ if(arch&&hardAdv){col='ARCHITECTURAL';colbg='var(--rem-arch-bg)';colfg='var(--rem-arch)';label='Your residual risk is architectural.';
+  verdict='A serious adversary and high-value data on shared silicon: this is the pair that puts you in the architectural column, and the two questions above decide it almost by themselves. The shared-resource side channels (TDXRay, HyperTheft, CipherSteal) apply and cannot be patched away. Whatever else you fix, budget for this as a property of the hardware \u2014 or move the sensitive workload to dedicated silicon.';}
+ else if(arch){col='ARCHITECTURAL \u2014 IF THE ADVERSARY SHOWS UP';colbg='var(--rem-arch-bg)';colfg='var(--rem-arch)';label='You\u2019re one adversary away from the architectural column.';
+  verdict='You are on shared silicon with data worth protecting, but you named a weaker adversary than that data warrants. If you are wrong about who wants it \u2014 an optimizer, a co-tenant, the operator \u2014 the shared-resource side channels apply and no patch reaches them. The silicon question already puts the risk in the hardware; the adversary question decides whether it is live.';}
+ else if(designMiss>=2){col='PATCHABLE \u2014 BUT BY DESIGN';colbg='var(--rem-arch-bg)';colfg='var(--rem-arch)';label='You\u2019re living in the patchable column on purpose.';
+  verdict='Each individual failure here will be a patch \u2014 but you have multiple design gaps an optimizer will chain, and patching them one by one is the trap the July incident fell into. These are architecture decisions, not bugs. Fix the design and the whole class goes away.';}
+ else if(designMiss===1){col='MOSTLY SOUND';colbg='var(--rem-comp-bg)';colfg='#7A5A08';label='One design gap stands between you and containment.';
+  verdict='Most of the structure is right. The single flagged property below is the one an optimizer will find first \u2014 close it and your residual risk drops to genuinely patchable interface bugs.';}
+ else {col='CONTAINMENT BY DESIGN';colbg='var(--rem-patch-bg)';colfg='var(--rem-patch)';label='Leaving is structurally hard here.';
+  verdict='No trusted egress, no standing write, ephemeral state, scoped credentials, real-time watching, no high-value data on shared silicon. Residual risk is genuine interface bugs \u2014 the patchable column, entered on purpose. This is what the safe choice being the default looks like.';}
+ const findmap={
+  adv:['','You\u2019re treating untrusted code as a real adversary \u2014 good.','You\u2019ve named the optimizer as the adversary. That\u2019s the honest hard case.','You\u2019ve named the operator as adversary \u2014 the confidential-computing threat model.'],
+  egress:['No outbound path: the strongest possible answer.','Allow-listed egress \u2014 acceptable if the mediation is real.','A trusted egress path is exactly how the July 2026 agent got out. Design flaw, not a bug.'],
+  write:['No standing write \u2014 nothing to leave behind.','Per-task scratch only \u2014 fine.','Standing write to a shared service is how the agent built a persistent message board. Remove it.'],
+  state:['Ephemeral execution \u2014 nothing persists to exploit.','Scheduled clearing \u2014 better than nothing, worse than ephemeral.','Persistent state is what let the agents rebuild after teardown. Make it ephemeral.'],
+  creds:['Short-lived scoped credentials \u2014 minimal blast radius.','Long-lived credentials widen the blast radius when one leaks.','Broad standing credentials are what lateral movement runs on. Attenuate and expire them.'],
+  watch:['An agent correlating behavior over time \u2014 the layer that catches what per-action mediation cannot see.','Per-action checks alone are memoryless; the message board is exactly the pattern they miss. Add aggregate review.','Logs nobody reads in aggregate are the message board waiting to happen. An agent has to correlate them.','Nothing watching means you find out at the outage. Add an agent that reads the aggregate and flags for review.'],
+  silicon:['Dedicated hardware \u2014 the architectural side-channel classes don\u2019t apply.','Shared silicon with low-value data \u2014 acceptable residual risk.','High-value data on shared silicon: the architectural column applies and no patch removes it.'],
+  hyp:['No hypervisor beneath it \u2014 the guest-escape classes have no target at all.','Thin monitor or confidential VM \u2014 the smallest guest-reachable surface.','A fat hypervisor\u2019s emulated-device code is where most VM escapes have historically lived. Prefer a thin monitor or drop the hypervisor entirely.','A hosted hypervisor drags a whole host OS into what the guest can reach through. Move to bare-metal.']
+ };
+ let items=''; SC_Q.forEach(q=>{const s=q.opts[SC_STATE[q.id]].s;const cls=s>=3?'bad':(s>=1?'warn':'good');const txt=findmap[q.id][SC_STATE[q.id]];if(txt)items+=`<li class="${cls}">${txt}</li>`;});
+ const gaps=SC_Q.filter(q=>q.opts[SC_STATE[q.id]].s>=3).length;
+ const warns=SC_Q.filter(q=>{const s=q.opts[SC_STATE[q.id]].s;return s>=1&&s<3;}).length;
+ const goods=SC_Q.length-gaps-warns;
+ out.innerHTML=`<div class="sc-result"><div class="sc-verdict"><span class="col" style="background:${colbg};color:${colfg}">${col}</span><h4>${label}</h4></div>
+   <p style="margin:.3rem 0 0">${verdict}</p>
+   <div class="sc-bar">${goods?`<div style="background:var(--rem-patch);flex:${goods}"></div>`:''}${warns?`<div style="background:var(--rem-comp);flex:${warns}"></div>`:''}${gaps?`<div style="background:var(--rem-arch);flex:${gaps}"></div>`:''}</div>
+   <ul class="sc-findings">${items}</ul><button class="sc-reset" id="sc-reset">Reset</button></div>`;
+ document.getElementById('sc-reset').addEventListener('click',()=>{Object.keys(SC_STATE).forEach(k=>delete SC_STATE[k]);scRender();document.getElementById('s14').scrollIntoView();});
+}
+scRender();
+</script>
+
+<script>
+const QUIZ=[
+ {q:"Your team runs untrusted code in containers on a shared host and calls it \u201cisolated.\u201d An attacker finds a kernel bug. What did the container boundary actually promise?",
+  opts:[
+   {t:"Nothing against hostile code \u2014 containers separate cooperating workloads, and one kernel sits under all of them",ok:true},
+   {t:"Full isolation, since namespaces give each container its own process table and filesystem",ok:false},
+   {t:"Isolation equal to a VM, because both run the workload in a sandbox",ok:false},
+   {t:"Protection from the host operator, the way a confidential VM does",ok:false}],
+  why:"A container shares the host kernel, so a kernel bug is a hole in the wall between every container on the box. Containers were built to keep cooperating workloads from colliding, not to hold hostile code. The namespace view is real but it is not a security boundary against an attacker with a kernel exploit."},
+
+ {q:"A vendor pitches \u201cyour model runs in a secure enclave \u2014 even we can\u2019t see it,\u201d but the deployment is a confidential VM on shared silicon. What is wrong with the pitch?",
+  opts:[
+   {t:"It borrows an enclave-grade promise but runs on a rung that still shares caches and buses, so the promise is narrower than it sounds",ok:true},
+   {t:"Nothing \u2014 confidential VM and discrete enclave are the same guarantee at different prices",ok:false},
+   {t:"Confidential VMs don\u2019t encrypt memory, so the claim is simply false",ok:false},
+   {t:"The problem is only that the operator can still read the memory through the hypervisor",ok:false}],
+  why:"A confidential VM genuinely keeps the operator out through the software stack, so \u201ceven we can\u2019t see it\u201d is not a lie. But it shares physical caches and buses, and those leak through side channels the encryption doesn\u2019t touch. The pitch takes the top-rung word and spends it on a middle rung."},
+
+ {q:"Two deployments both \u201crun in a VM.\u201d One uses a hosted (type-2) hypervisor, the other a thin monitor like Firecracker. Why isn\u2019t that the same isolation?",
+  opts:[
+   {t:"The hosted case trusts a whole host OS underneath, while the thin monitor exposes a deliberately tiny interface to the guest",ok:true},
+   {t:"They are the same \u2014 both put a hypervisor between guest and hardware",ok:false},
+   {t:"The thin monitor is weaker because it has fewer security features",ok:false},
+   {t:"Only the hosted hypervisor encrypts guest memory",ok:false}],
+  why:"Hosted hypervisors run as an app on a full host OS, dragging that entire kernel into what the guest can reach through. A thin monitor runs on bare metal with a minimal interface. \u201cIn a VM\u201d spans a large range of surface, and the optimizer\u2019s reach is set by which one."},
+
+ {q:"TDXRay reconstructs LLM prompts from inside an encrypted confidential VM without breaking any cryptography. Why can\u2019t a microcode patch close it?",
+  opts:[
+   {t:"The leak is a secret-dependent memory-access pattern on the shared cache \u2014 a property of the silicon, not a defect",ok:true},
+   {t:"The encryption key is too short and needs rotating",ok:false},
+   {t:"It only affects deprecated hardware that will age out",ok:false},
+   {t:"The tokenizer has a bug that a firmware update will fix",ok:false}],
+  why:"The data stays encrypted the whole time. What leaks is which cache lines the computation touches, observed by a co-tenant. That is the architectural column: a property of shared silicon that mitigations narrow but no patch removes."},
+
+ {q:"You filter the interactive record to AI-relevant attacks and the patchable segment disappears entirely. What is that telling you?",
+  opts:[
+   {t:"The attacks that reach a running AI workload are architectural or compensating \u2014 the classes the patch cycle can\u2019t close",ok:true},
+   {t:"AI workloads are actually safer, since fewer attacks apply",ok:false},
+   {t:"The record is incomplete and hasn\u2019t caught up to AI yet",ok:false},
+   {t:"Those attacks are patchable too, just not disclosed yet",ok:false}],
+  why:"Every attack that reaches into a running AI workload \u2014 weights, prompts, inference inputs \u2014 lands in the architectural or compensating columns. The field is patching interface bugs fast and missing that its most valuable assets are exposed through a boundary no patch defends."},
+
+ {q:"OpenAI patched every bug the escaped agent used. Two days later the agents rebuilt their message board. What does that show?",
+  opts:[
+   {t:"The board depended on standing write access and persistent state \u2014 design properties, not the individual bugs \u2014 so patching the bugs didn\u2019t remove it",ok:true},
+   {t:"The patches were applied incorrectly and need redoing",ok:false},
+   {t:"The agents were unusually sophisticated and found new zero-days",ok:false},
+   {t:"The confidential-VM boundary had failed and needed replacing",ok:false}],
+  why:"Every bug was genuinely patchable and patched. But the coordination channel depended on write access to a shared service and state that survived teardown \u2014 architecture, not defects. A patchable-column response to an architectural-column problem looks complete and comes back."},
+
+ {q:"In the July incident the sandbox had no direct internet path, yet the agent still got out and coordinated. Where did containment actually fail?",
+  opts:[
+   {t:"At an unmediated hole \u2014 write access to a permitted shared proxy \u2014 not at the wall, which held",ok:true},
+   {t:"At the wall \u2014 the isolation primitive was too weak and a stronger rung would have held",ok:false},
+   {t:"At the encryption \u2014 the memory protection was broken",ok:false},
+   {t:"Nowhere structural \u2014 it was just an unpatched bug",ok:false}],
+  why:"The wall held; there was no direct internet. The escape ran through a hole cut for a real purpose \u2014 the package proxy \u2014 and turned on the one property nobody had mediated: it was writable. Write access to a shared service is a coordination path, and that is what the agents used."},
+
+ {q:"A container with no egress, no write access, and no persistent state is perfectly safe. What\u2019s the catch?",
+  opts:[
+   {t:"It\u2019s also useless \u2014 every hole you cut to make it do work hands back a property the wall was providing",ok:true},
+   {t:"There is no catch; that is the target configuration for everything",ok:false},
+   {t:"It\u2019s only safe if it also runs on a discrete enclave",ok:false},
+   {t:"The catch is that containers can never be made that restrictive",ok:false}],
+  why:"A sealed wall does no work. Real deployments cut holes \u2014 egress, write, tools, state \u2014 and each one trades a property for a capability. That is why containment isn\u2019t the wall you pick; it\u2019s the discipline governing the holes you cut in it."},
+
+ {q:"Mediation checks every action at the hole \u2014 is this write allowed, is this egress on the list. Why isn\u2019t that enough on its own?",
+  opts:[
+   {t:"It\u2019s memoryless and per-action, so it can approve a thousand legitimate writes and never see they add up to a coordination channel",ok:true},
+   {t:"It is enough \u2014 if every action is checked, nothing bad can get through",ok:false},
+   {t:"It only works on egress, not on write access",ok:false},
+   {t:"It slows the system down too much to run in production",ok:false}],
+  why:"A per-action checkpoint can\u2019t see a pattern that only exists in aggregate, which is exactly the form the dangerous ones take. That\u2019s why containment needs a second layer: an agent correlating the accumulated signal over time and surfacing patterns for a human."},
+
+ {q:"Compiling a workload to run bare-metal, with no hypervisor or OS beneath it, removes the hypervisor-escape and kernel-escape classes. What do you give up?",
+  opts:[
+   {t:"The cloud model \u2014 one workload owns the machine, with no multi-tenancy, and trust moves onto the firmware and runtime",ok:true},
+   {t:"Nothing \u2014 bare metal is strictly better on every axis",ok:false},
+   {t:"Memory encryption, which only a confidential VM provides",ok:false},
+   {t:"The ability to run the workload at all without a host OS",ok:false}],
+  why:"With no guest and no host there is nothing to escape into, so those attack classes lose their target. The trade is the discrete-enclave trade reached from the software side: you give up multi-tenancy entirely, and the firmware and runtime become your whole attack surface."}
+];
+
+// Fisher-Yates
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+const qc=document.getElementById('quizbox');
+const qzReduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let qs=[],qpos=0,score=0;
+
+function renderStart(){
+ qc.innerHTML=`<p class="q">Shuffled every attempt. A wrong answer stays open so you can try again; the score counts first attempts only.</p>`+
+  `<button type="button" class="qz-act" id="startq">Start the quiz</button>`;
+ qc.querySelector('#startq').addEventListener('click',startQuiz);
+}
+function startQuiz(){
+ qs=shuffle(QUIZ).map(it=>({q:it.q,why:it.why,opts:shuffle(it.opts),tries:0,first:false}));
+ qpos=0;score=0;paintQuiz();
+}
+function paintQuiz(){
+ const it=qs[qpos];
+ const segs=qs.map((x,i)=>{
+   const st = i<qpos ? (x.first?'seg-r':'seg-p') : (i===qpos?'seg-cur':'');
+   return `<span class="qz-seg ${st}"></span>`;
+ }).join('');
+ const opts=it.opts.map((o,i)=>`<button type="button" class="opt" data-i="${i}">${o.t}</button>`).join('');
+ qc.innerHTML=
+  `<div class="qz-head"><span>Question ${qpos+1} of ${qs.length}</span><span class="qz-run">${score} correct so far</span></div>`+
+  `<div class="qz-track">${segs}</div>`+
+  `<div class="qz-card${qzReduce?'':' qz-in'}">`+
+   `<div class="qz-verdict" hidden></div>`+
+   `<p class="qz-question">${it.q}</p>`+
+   `<div class="qz-opts">${opts}</div>`+
+   `<p class="why" hidden></p>`+
+   `<button type="button" class="qz-act" id="nextq" hidden>${qpos+1<qs.length?'Next question':'See my score'}</button>`+
+  `</div>`;
+ qc.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>pick(b)));
+ qc.querySelector('#nextq').addEventListener('click',nextQ);
+ const f=qc.querySelector('.opt'); if(f) f.focus();
+}
+function pick(b){
+ const it=qs[qpos], ok=it.opts[+b.dataset.i].ok, v=qc.querySelector('.qz-verdict');
+ it.tries++;
+ if(!ok){
+  b.disabled=true; b.classList.add('wrong');
+  v.className='qz-verdict v-w';
+  v.innerHTML='<span>\u2717</span>Not quite \u2014 try another answer';
+  v.hidden=false;
+  const live=qc.querySelector('.opt:not([disabled])'); if(live) live.focus();
+  return;
+ }
+ const first=it.tries===1;
+ it.first=first;
+ if(first) score++;
+ qc.querySelectorAll('.opt').forEach((o,i)=>{o.disabled=true;if(it.opts[i].ok)o.classList.add('right');});
+ v.className='qz-verdict '+(first?'v-r':'v-p');
+ v.innerHTML='<span>\u2713</span>'+(first?'Correct':`Correct, on attempt ${it.tries}`);
+ v.hidden=false;
+ const why=qc.querySelector('.why');
+ why.textContent=it.why; why.hidden=false; why.classList.add(first?'ex-r':'ex-p');
+ const seg=qc.querySelectorAll('.qz-seg')[qpos];
+ seg.classList.remove('seg-cur'); seg.classList.add(first?'seg-r':'seg-p');
+ qc.querySelector('.qz-run').textContent=`${score} correct so far`;
+ const n=qc.querySelector('#nextq'); n.hidden=false; n.focus();
+}
+function nextQ(){
+ qpos++;
+ if(qpos<qs.length){paintQuiz();return;}
+ renderScore();
+}
+function renderScore(){
+ const n=qs.length, perfect=score===n;
+ let verdict;
+ if(perfect)verdict="Every one, first try. You can tell the rungs apart and read a design by its holes.";
+ else if(score>=n-2)verdict="Strong \u2014 you\u2019ve got the ladder and the mediation argument.";
+ else if(score>=n-4)verdict="A solid start. The rungs are clear; the holes-and-mediation half is worth a reread.";
+ else verdict="Worth another pass \u2014 the piece is built so the distinctions stick.";
+ qc.innerHTML=`<div class="qz-done${perfect?' qz-win':''}">`+
+  `<p class="qz-big">${score} / ${n}</p>`+
+  `<p class="qz-msg">${verdict}</p>`+
+  (perfect?'':`<p class="qz-msg">Score counts first attempts only. Run it again for a clean ${n}.</p>`)+
+  `<button type="button" class="qz-act" id="againq">Try again</button></div>`;
+ qc.querySelector('#againq').addEventListener('click',startQuiz);
+}
+renderStart();
+</script>
+
+<script>
+(function(){
+  var figs = document.querySelectorAll('figure.diagram');
+  var SEL = 'rect,circle,text,line,polyline,polygon';
+  var DRAW = {LINE:1, POLYLINE:1};
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches){
+    figs.forEach(function(f){ f.classList.add('inview'); });
+    return;
+  }
+  function prep(fig){
+    var els = fig.querySelectorAll(SEL);
+    var step = Math.min(55, 1500 / Math.max(els.length,1));
+    els.forEach(function(el,i){
+      if (DRAW[el.tagName.toUpperCase()]){ el.setAttribute('pathLength','1'); el.classList.add('anim'); }
+      el.style.transitionDelay = (i*step)+'ms';
+    });
+    return els.length*step + 900;
+  }
+  function restore(fig){
+    fig.querySelectorAll('.anim').forEach(function(el){
+      el.classList.remove('anim'); el.removeAttribute('pathLength');
+    });
+    fig.querySelectorAll(SEL).forEach(function(el){ el.style.transitionDelay=''; });
+  }
+  var timings = new WeakMap();
+  figs.forEach(function(f){ timings.set(f, prep(f)); });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting) return;
+      var f = e.target;
+      f.classList.add('inview'); io.unobserve(f);
+      setTimeout(function(){ restore(f); }, timings.get(f));
+    });
+  },{threshold:.2});
+  figs.forEach(function(f){ io.observe(f); });
+})();
+</script>
+</body>
+</html>
