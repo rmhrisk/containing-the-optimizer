@@ -714,7 +714,31 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 </select>
 </div>
 <p class="count" id="count"></p>
+<noscript>
+<p class="smallnote" style="border-left:3px solid var(--rem-arch);padding:.6rem .8rem;background:var(--panel);margin:0 0 1rem">
+The record below is rendered by script, so with scripts disabled the table is empty. Its shape, which is what the argument rests on:
+28 entries, of which 11 are patchable, 5 compensating, 8 architectural, and 4 root-of-trust breaks. The patchable column is the largest
+overall, and that is the point &mdash; it is dominated by the software-interface and speculative-execution bugs of the early years, the era
+the &ldquo;just patch it&rdquo; intuition was formed in. Now restrict to the five entries marked AI-relevant, the ones that extract model
+weights, inference inputs, or user prompts from a running workload: four are architectural and one is compensating. The patchable column
+is empty. The intuition and the workload have moved in opposite directions.
+</p>
+</noscript>
+<div class="vx-scroll">
+<table class="vx">
+<thead><tr>
+<th class="yr">Year</th><th>Attack</th><th class="pf hidecol">Platform</th>
+<th class="hidecol">Vector</th><th>Fate</th><th class="im">What it gets</th><th></th>
+</tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+<p class="smallnote" style="margin-top:.6rem">Each row anchor-links. The &sect; copies a direct link to that entry, so a specific attack can be cited on its own. Entries marked <span class="tag ai">AI</span> extract model weights, inference inputs, or user prompts from a running workload, and each rests on published, peer-reviewed research rather than rumor. This set covers the attacks that carry the argument; it is not the complete catalog. The newest entries are also the least settled, having had the least time to be replicated or contradicted.</p>
+<div class="lesson"><span class="eyebrow">Key lesson</span><p>Toggle <em>AI-relevant only</em> and read the bar. The patchable segment vanishes. Every attack that reaches into a running AI workload lands in the architectural or compensating columns, the two the patch cycle cannot close. Hold that result; the next section is about why almost no one deploying AI isolation has noticed it.</p></div>
 
+<h2 id="s9"><span class="snum">9</span>The rung AI runs on, and hasn&rsquo;t met yet</h2>
+<p>Put the ladder and the record together and the picture sharpens. &ldquo;Private AI&rdquo; is sold on the confidential-VM rung (the one that shares caches, buses, and the memory engine) while the conversation about its failures is stuck one rung lower, among the container-and-sandbox escapes. That is the mismatch this whole piece exists to name. The AI-isolation conversation is living almost entirely in the patchable column and has not yet met the other three. Container escapes, agent jailbreaks, tool-call breakouts, nearly all vector 7, nearly all genuinely patchable. That is a real treadmill, and the industry knows how to run it. The mistake is concluding from the treadmill that isolation for AI is fundamentally a patching problem.</p>
+<p>It stops being one the instant those workloads share silicon. Put an inference job on a GPU or CPU it shares with another tenant and the shared-resource side channels (the architectural column) come into scope, and nobody in the sandbox-escape discussion is talking about them yet. The three entries that carry this are the newest in the record, and none of them breaks any cryptography. <strong><a href="https://tdxray.cpusec.org/">TDXRay</a></strong> reconstructs a language model&rsquo;s user prompts word-for-word from inside an encrypted confidential VM, by watching at cache-line granularity which hash-map buckets the tokenizer walks. The data stays encrypted the whole time; the computation pattern leaks it. <strong><a href="https://dl.acm.org/doi/10.1145/3658644.3690317">HyperTheft</a></strong> and <strong><a href="https://ieeexplore.ieee.org/document/11023361/">CipherSteal</a></strong> do the same to the two assets an AI deployment most wants to protect, model weights and inference inputs, through a ciphertext side channel. All three are architectural. A patch can raise the cost or add mitigations, but none of them removes the underlying shared-resource leakage mechanism, because that mechanism is the shared silicon doing its job.</p>
 <figure class="diagram" aria-label="The record over time: patchable findings dominate the early years while architectural and root-of-trust findings dominate the recent ones, and every AI-relevant entry falls in 2024 or later">
 <svg viewBox="0 0 900 400" role="img" xmlns="http://www.w3.org/2000/svg">
 <rect width="900" height="400" fill="#FFFFFF"/>
@@ -778,34 +802,8 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 <line x1="236.0" y1="336" x2="864.0" y2="336" stroke="#C4C0B4" stroke-width="1"/>
 <text x="30" y="386" font-family="'Source Serif 4',serif" font-size="11.5" fill="#5F646B">2018&ndash;2021: <tspan font-weight="700" fill="#2F7D5A">5 of 8</tspan> patchable. 2024&ndash;2026: <tspan font-weight="700" fill="#2F7D5A">3 of 16</tspan>, with architectural and root-of-trust taking nine. Every AI-relevant entry falls in the later window.</text>
 </svg>
-<figcaption>The same twenty-eight entries as the table below, placed in time. Two cautions before reading a trend into it. The counts are small, so one disclosure moves a row visibly, and the later years are busier partly because more researchers are looking at these platforms now than in 2018. What survives both cautions is the composition. The early record is mostly the speculative-execution and interface bugs that a patch closes, the recent record is mostly the shared-silicon and root-of-trust findings that no patch closes, and the entries that reach the assets AI deployments exist to protect appear only after 2023.</figcaption>
+<figcaption>The same twenty-eight entries from the record above, placed in time. Two cautions before reading a trend into it. The counts are small, so one disclosure moves a row visibly, and the later years are busier partly because more researchers are looking at these platforms now than in 2018. What survives both cautions is the composition. The early record is mostly the speculative-execution and interface bugs that a patch closes, the recent record is mostly the shared-silicon and root-of-trust findings that no patch closes, and the entries that reach the assets AI deployments exist to protect appear only after 2023, which is the mismatch this section is about.</figcaption>
 </figure>
-
-<noscript>
-<p class="smallnote" style="border-left:3px solid var(--rem-arch);padding:.6rem .8rem;background:var(--panel);margin:0 0 1rem">
-The record below is rendered by script, so with scripts disabled the table is empty. Its shape, which is what the argument rests on:
-28 entries, of which 11 are patchable, 5 compensating, 8 architectural, and 4 root-of-trust breaks. The patchable column is the largest
-overall, and that is the point &mdash; it is dominated by the software-interface and speculative-execution bugs of the early years, the era
-the &ldquo;just patch it&rdquo; intuition was formed in. Now restrict to the five entries marked AI-relevant, the ones that extract model
-weights, inference inputs, or user prompts from a running workload: four are architectural and one is compensating. The patchable column
-is empty. The intuition and the workload have moved in opposite directions.
-</p>
-</noscript>
-<div class="vx-scroll">
-<table class="vx">
-<thead><tr>
-<th class="yr">Year</th><th>Attack</th><th class="pf hidecol">Platform</th>
-<th class="hidecol">Vector</th><th>Fate</th><th class="im">What it gets</th><th></th>
-</tr></thead>
-<tbody id="rows"></tbody>
-</table>
-</div>
-<p class="smallnote" style="margin-top:.6rem">Each row anchor-links. The &sect; copies a direct link to that entry, so a specific attack can be cited on its own. Entries marked <span class="tag ai">AI</span> extract model weights, inference inputs, or user prompts from a running workload, and each rests on published, peer-reviewed research rather than rumor. This set covers the attacks that carry the argument; it is not the complete catalog. The newest entries are also the least settled, having had the least time to be replicated or contradicted.</p>
-<div class="lesson"><span class="eyebrow">Key lesson</span><p>Toggle <em>AI-relevant only</em> and read the bar. The patchable segment vanishes. Every attack that reaches into a running AI workload lands in the architectural or compensating columns, the two the patch cycle cannot close. Hold that result; the next section is about why almost no one deploying AI isolation has noticed it.</p></div>
-
-<h2 id="s9"><span class="snum">9</span>The rung AI runs on, and hasn&rsquo;t met yet</h2>
-<p>Put the ladder and the record together and the picture sharpens. &ldquo;Private AI&rdquo; is sold on the confidential-VM rung (the one that shares caches, buses, and the memory engine) while the conversation about its failures is stuck one rung lower, among the container-and-sandbox escapes. That is the mismatch this whole piece exists to name. The AI-isolation conversation is living almost entirely in the patchable column and has not yet met the other three. Container escapes, agent jailbreaks, tool-call breakouts, nearly all vector 7, nearly all genuinely patchable. That is a real treadmill, and the industry knows how to run it. The mistake is concluding from the treadmill that isolation for AI is fundamentally a patching problem.</p>
-<p>It stops being one the instant those workloads share silicon. Put an inference job on a GPU or CPU it shares with another tenant and the shared-resource side channels (the architectural column) come into scope, and nobody in the sandbox-escape discussion is talking about them yet. The three entries that carry this are the newest in the record, and none of them breaks any cryptography. <strong><a href="https://tdxray.cpusec.org/">TDXRay</a></strong> reconstructs a language model&rsquo;s user prompts word-for-word from inside an encrypted confidential VM, by watching at cache-line granularity which hash-map buckets the tokenizer walks. The data stays encrypted the whole time; the computation pattern leaks it. <strong><a href="https://dl.acm.org/doi/10.1145/3658644.3690317">HyperTheft</a></strong> and <strong><a href="https://ieeexplore.ieee.org/document/11023361/">CipherSteal</a></strong> do the same to the two assets an AI deployment most wants to protect, model weights and inference inputs, through a ciphertext side channel. All three are architectural. A patch can raise the cost or add mitigations, but none of them removes the underlying shared-resource leakage mechanism, because that mechanism is the shared silicon doing its job.</p>
 <blockquote><p>The &ldquo;private AI&rdquo; promise is that encryption protects your data in memory. It does. Then the computation pattern leaks the same data through the cache, because that is a different boundary than the one the encryption defends.</p></blockquote>
 <p>So the AI-isolation world faces two problems stacked on top of each other. On top, the interface treadmill: patchable, loud, survivable, and getting all the attention. Underneath, the shared-silicon side channels: architectural, quiet, permanent, and getting almost none. A field that reads only the top of that stack will conclude, correctly, that it is patching fast, and miss, entirely, that its most valuable assets are exposed through a boundary no patch defends. The record hands you that reading a decade before you would otherwise reach it entry by entry.</p>
 <p>And the record so far is mostly the CPU side of the story, which understates the problem, because AI runs on the accelerator, where sharing is even less settled. A GPU was built to serve one workload at a time, and Kubernetes still hands a pod a <em>whole</em> GPU by default, so cross-tenant sharing was added afterward with uneven isolation: NVIDIA&rsquo;s hardware partitioning (MIG) gives tenants genuinely separate memory but arrived only with Ampere and is unevenly adopted, while the software time-slicing many environments fall back on does not isolate memory between the workloads sharing a card. The exposures follow the same architectural shape as the CPU ones. <a href="https://blog.trailofbits.com/2024/01/16/leftoverlocals-listening-to-llm-responses-through-leaked-gpu-local-memory/">LeftoverLocals</a> (CVE-2023-4969) let one process read another&rsquo;s data out of GPU local memory that was never cleared between kernels; <a href="https://arxiv.org/abs/2507.08166">GPUHammer</a> (USENIX Security 2025) showed Rowhammer bit-flips in a GPU&rsquo;s GDDR6, where a single flip in a weight&rsquo;s exponent collapsed model accuracy from around 80 percent to under one, mitigable only with error-correcting memory that costs standing performance and capacity. Same lesson as the confidential-VM rung. No patch makes shared silicon stop being shared.</p>
