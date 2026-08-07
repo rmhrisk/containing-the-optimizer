@@ -295,6 +295,67 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 <p>A <strong>container</strong> shares the host kernel. Namespaces and cgroups give each container its own view of the process table, the filesystem, and the network, but there is one kernel underneath all of them, and a flaw in that kernel is a flaw in the wall between every container on the box. Containers were built to keep <em>cooperating</em> workloads from tripping over each other, a packaging and resource-management tool, not a defense against code that is actively trying to get out. That is not a knock on containers; it is what they are for. It is only a problem when someone points hostile code at one and expects a security boundary, which is exactly what happened in July.</p>
 <p>A <strong>virtual machine</strong> shares the hypervisor and the silicon, but not the kernel. Each guest runs its own operating system, and the hypervisor mediates between them with a far smaller, far more scrutinised interface than a shared kernel exposes. This is a genuine escalation in isolation strength, and it is why the security-conscious response to &ldquo;run untrusted code&rdquo; has long been &ldquo;put a VM boundary around it.&rdquo; But a VM still trusts the host. The operator, the hypervisor, and anyone who compromises them can see inside the guest. The VM defends you from your neighbours, not from your landlord.</p>
 <p>Those two, container and VM, are the entire isolation vocabulary most deployments actually use, and the gap between them is already large enough to matter. A container escape and a VM escape are different events with different likelihoods and different fixes, and treating &ldquo;it&rsquo;s isolated&rdquo; as though it named one guarantee erases that difference. The next two rungs exist to defend against the landlord, and they are where the AI-privacy pitch lives.</p>
+<figure class="diagram" aria-label="Container, virtual machine, and discrete enclave drawn as stacks, with the layers shared with a neighbouring tenant marked: the container shares the kernel, the VM shares only the hypervisor and hardware, and the enclave shares neither">
+<svg viewBox="0 0 900 380" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="900" height="380" fill="#FFFFFF"/>
+<text x="30" y="30" font-family="'IBM Plex Mono',monospace" font-size="12" font-weight="400" fill="#5F646B" text-anchor="start" letter-spacing="1.2">THE SAME QUESTION EACH TIME. WHAT IS BETWEEN YOU AND THE WORKLOAD NEXT DOOR?</text>
+<text x="30" y="52" font-family="'Source Serif 4',serif" font-size="11.5" font-weight="400" fill="#5F646B" text-anchor="start">Rust is shared with your neighbour and is therefore surface. Green is yours alone.</text>
+<text x="170.0" y="80" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C" text-anchor="middle">Container</text>
+<text x="170.0" y="95" font-family="'IBM Plex Mono',monospace" font-size="9" font-weight="400" fill="#5F646B" text-anchor="middle">shares the kernel</text>
+<text x="450.0" y="80" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C" text-anchor="middle">Virtual machine</text>
+<text x="450.0" y="95" font-family="'IBM Plex Mono',monospace" font-size="9" font-weight="400" fill="#5F646B" text-anchor="middle">shares the hypervisor and the silicon</text>
+<text x="730.0" y="80" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C" text-anchor="middle">Discrete enclave</text>
+<text x="730.0" y="95" font-family="'IBM Plex Mono',monospace" font-size="9" font-weight="400" fill="#5F646B" text-anchor="middle">shares neither</text>
+<rect x="40" y="106" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="102.5" y="128.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Workload A</text>
+<rect x="175.0" y="106" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="237.5" y="128.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Workload B</text>
+<rect x="320" y="106" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="382.5" y="128.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Workload A</text>
+<rect x="455.0" y="106" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="517.5" y="128.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Workload B</text>
+<rect x="600" y="106" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="662.5" y="128.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Workload A</text>
+<rect x="735.0" y="106" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="797.5" y="128.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Workload B</text>
+<rect x="40" y="148" width="260" height="80" rx="2" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.2"/>
+<text x="170.0" y="187.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#AD4227" text-anchor="middle">Shared kernel</text>
+<text x="170.0" y="199.0" font-family="'IBM Plex Mono',monospace" font-size="8" font-weight="400" fill="#5F646B" text-anchor="middle">namespaces and cgroups only change the view</text>
+<rect x="40" y="232" width="260" height="32" rx="2" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.2"/>
+<text x="170.0" y="251.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#AD4227" text-anchor="middle">Hardware</text>
+<rect x="320" y="148" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="382.5" y="170.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Guest OS A</text>
+<rect x="455.0" y="148" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="517.5" y="170.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Guest OS B</text>
+<rect x="320" y="190" width="260" height="38" rx="2" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.2"/>
+<text x="450.0" y="208.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#AD4227" text-anchor="middle">Hypervisor</text>
+<text x="450.0" y="220.0" font-family="'IBM Plex Mono',monospace" font-size="8" font-weight="400" fill="#5F646B" text-anchor="middle">smaller interface, far more scrutinised</text>
+<rect x="320" y="232" width="260" height="32" rx="2" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.2"/>
+<text x="450.0" y="251.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#AD4227" text-anchor="middle">Hardware</text>
+<rect x="600" y="148" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="662.5" y="170.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Runtime A</text>
+<rect x="735.0" y="148" width="125.0" height="38" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="797.5" y="170.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Runtime B</text>
+<rect x="600" y="190" width="125.0" height="42" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="662.5" y="214.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Own processor</text>
+<rect x="735.0" y="190" width="125.0" height="42" rx="2" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="797.5" y="214.5" font-family="'Source Serif 4',serif" font-size="10.5" font-weight="600" fill="#2F7D5A" text-anchor="middle">Own processor</text>
+<rect x="600" y="232" width="260" height="32" rx="2" fill="#FFFFFF" stroke="#5F646B" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="730.0" y="253" font-family="'IBM Plex Mono',monospace" font-size="9.5" font-weight="400" fill="#5F646B" text-anchor="middle">Host, outside the trust boundary</text>
+<line x1="40" y1="282" x2="300" y2="282" stroke="#DAD7CE" stroke-width="1"/>
+<text x="170.0" y="297" font-family="'Source Serif 4',serif" font-size="10" font-weight="400" fill="#5F646B" text-anchor="middle">The wall is the kernel.</text>
+<text x="170.0" y="311" font-family="'Source Serif 4',serif" font-size="10" font-weight="400" fill="#5F646B" text-anchor="middle">A flaw in it is a flaw in every wall on the box.</text>
+<line x1="320" y1="282" x2="580" y2="282" stroke="#DAD7CE" stroke-width="1"/>
+<text x="450.0" y="297" font-family="'Source Serif 4',serif" font-size="10" font-weight="400" fill="#5F646B" text-anchor="middle">The wall is the hypervisor.</text>
+<text x="450.0" y="311" font-family="'Source Serif 4',serif" font-size="10" font-weight="400" fill="#5F646B" text-anchor="middle">It still trusts the operator underneath it.</text>
+<line x1="600" y1="282" x2="860" y2="282" stroke="#DAD7CE" stroke-width="1"/>
+<text x="730.0" y="297" font-family="'Source Serif 4',serif" font-size="10" font-weight="400" fill="#5F646B" text-anchor="middle">The wall is physical.</text>
+<text x="730.0" y="311" font-family="'Source Serif 4',serif" font-size="10" font-weight="400" fill="#5F646B" text-anchor="middle">The landlord is outside it.</text>
+<text x="30" y="348" font-family="'Source Serif 4',serif" font-size="11.5" font-weight="400" fill="#5F646B" text-anchor="start">Container and VM are the entire isolation vocabulary most deployments use, and a container escape and a VM escape are different events</text>
+<text x="30" y="364" font-family="'Source Serif 4',serif" font-size="11.5" font-weight="400" fill="#5F646B" text-anchor="start">with different likelihoods and different fixes. Calling both of them &ldquo;isolated&rdquo; erases exactly that difference.</text>
+</svg>
+<figcaption>The same two workloads, placed on three different rungs. What changes is not how strong the wall is but how much of the stack the neighbours hold in common, because every shared layer is a path between them. The container gives each workload its own view of the process table and the filesystem while one kernel sits under all of them. The VM gives each its own operating system and leaves only the hypervisor and the silicon in common. The enclave removes the shared processor as well, which is the step that finally puts the operator outside the boundary rather than inside it.</figcaption>
+</figure>
 <div class="lesson"><span class="eyebrow">Key lesson</span><p>The question that separates the rungs is a simple one: <em>what does it share?</em> A container shares the kernel; a VM shares only the hypervisor and the hardware. Sharing is surface, and surface is risk. &ldquo;Isolated&rdquo; without naming the rung is a claim with no threat model attached, which is to say, no claim at all.</p></div>
 
 <h2 id="s2"><span class="snum">2</span>Not all VMs are the same</h2>
