@@ -169,7 +169,16 @@ footer .smallnote{margin:0;font-size:.88rem;color:#98A0A8;line-height:1.6}
 footer .smallnote a{color:#7FA6BE}
 @media(max-width:640px){.hidecol{display:none}}
 .vx-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-@media(max-width:640px){.vx-scroll{margin:0 -1.25rem;padding:0 1.25rem}table.vx{min-width:26rem}}
+tr.imrow{display:none}
+@media(max-width:760px){
+ table.vx td.im,table.vx th.im{display:none}
+ tr.imrow{display:table-row}
+ tr.imrow td{border-bottom:1px solid var(--rule);padding:0 .6rem .6rem;color:#2A2F35;font-size:.86rem;line-height:1.45}
+ table.vx tr:not(.imrow) td{border-bottom:0;padding-bottom:.3rem}
+ table.vx tr:target td,table.vx tr:target+tr.imrow td{background:#FBF3D8}
+ .vx-scroll{overflow-x:visible;margin:0;padding:0}
+ table.vx{min-width:0}
+}
 
 /* ---- motion system ---- */
 html.js figure.diagram svg rect,html.js figure.diagram svg circle{opacity:0;transform:translateY(7px);transition:opacity .5s ease,transform .5s ease}
@@ -1107,7 +1116,8 @@ function renderRecord(){
    `<td class="pf hidecol">${esc(d.pf)}</td><td class="hidecol">${esc(d.v)}</td>`+
    `<td><span class="tag ${d.rem}">${REMLABEL[d.rem]}</span></td>`+
    `<td class="im">${esc(d.im)}</td>`+
-   `<td><a class="anchor" href="#${id}" title="Link to this entry">&sect;</a></td></tr>`;
+   `<td><a class="anchor" href="#${id}" title="Link to this entry">&sect;</a></td></tr>`+
+   `<tr class="imrow" aria-hidden="true"><td colspan="7">${esc(d.im)}</td></tr>`;
  }).join('')||'<tr><td colspan="7" style="padding:1.2rem;color:var(--muted)">No entries match this combination. Clear a filter to widen the set.</td></tr>';
  const c={patch:0,comp:0,arch:0,root:0}; rows.forEach(d=>c[d.rem]++);
  const col={patch:'var(--rem-patch)',comp:'var(--rem-comp)',arch:'var(--rem-arch)',root:'var(--rem-root)'};
