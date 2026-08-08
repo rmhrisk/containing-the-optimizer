@@ -671,21 +671,21 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 <text x="784.3" y="122" font-family="'Newsreader',Georgia,serif" font-size="16" font-weight="700" fill="#5B2A57" text-anchor="middle">4</text>
 
 <text x="60" y="196" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C">Only the entries that reach model weights, inference inputs, or prompts</text>
-<text x="840" y="196" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#5F646B" text-anchor="end">n = 5</text>
-<rect x="60.0" y="208" width="156.0" height="46" fill="#F6EEDC" stroke="#A8770A" stroke-width="1.2"/>
-<text x="138.0" y="228" font-family="'IBM Plex Mono',monospace" font-size="8.5" letter-spacing=".06em" fill="#A8770A" text-anchor="middle">COMPENSATING</text>
-<text x="138.0" y="246" font-family="'Newsreader',Georgia,serif" font-size="16" font-weight="700" fill="#A8770A" text-anchor="middle">1</text>
-<rect x="216.0" y="208" width="624.0" height="46" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.2"/>
-<text x="528.0" y="228" font-family="'IBM Plex Mono',monospace" font-size="8.5" letter-spacing=".06em" fill="#AD4227" text-anchor="middle">ARCHITECTURAL</text>
-<text x="528.0" y="246" font-family="'Newsreader',Georgia,serif" font-size="16" font-weight="700" fill="#AD4227" text-anchor="middle">4</text>
+<text x="840" y="196" font-family="'IBM Plex Mono',monospace" font-size="9" fill="#5F646B" text-anchor="end">n = 4</text>
+<rect x="60.0" y="208" width="195.0" height="46" fill="#F6EEDC" stroke="#A8770A" stroke-width="1.2"/>
+<text x="157.5" y="228" font-family="'IBM Plex Mono',monospace" font-size="8.5" letter-spacing=".06em" fill="#A8770A" text-anchor="middle">COMPENSATING</text>
+<text x="157.5" y="246" font-family="'Newsreader',Georgia,serif" font-size="16" font-weight="700" fill="#A8770A" text-anchor="middle">1</text>
+<rect x="255.0" y="208" width="585.0" height="46" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.2"/>
+<text x="547.5" y="228" font-family="'IBM Plex Mono',monospace" font-size="8.5" letter-spacing=".06em" fill="#AD4227" text-anchor="middle">ARCHITECTURAL</text>
+<text x="547.5" y="246" font-family="'Newsreader',Georgia,serif" font-size="16" font-weight="700" fill="#AD4227" text-anchor="middle">3</text>
 
 <line x1="366.4" y1="78" x2="366.4" y2="264" stroke="#2F7D5A" stroke-width="1" stroke-dasharray="3,3"/>
 <text x="358.4" y="288" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#2F7D5A" text-anchor="end">patchable in the record above</text>
 <text x="374.4" y="288" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#AD4227" text-anchor="start">architectural in the one below</text>
 
-<text x="60" y="322" font-family="'Source Serif 4',serif" font-size="11.5" fill="#5F646B">Patchable: <tspan font-weight="700" fill="#2F7D5A">11 of 28</tspan> in the full record, <tspan font-weight="700" fill="#2F7D5A">0 of 5</tspan> once the workload is the thing being protected. Bars are scaled to share, not to count.</text>
+<text x="60" y="322" font-family="'Source Serif 4',serif" font-size="11.5" fill="#5F646B">Patchable: <tspan font-weight="700" fill="#2F7D5A">11 of 28</tspan> in the full record, <tspan font-weight="700" fill="#2F7D5A">0 of 4</tspan> once the workload is the thing being protected. Bars are scaled to share, not to count.</text>
 </svg>
-<figcaption>Both bars are drawn to the same width so the shapes can be compared, which flatters the lower one, since it rests on five entries against twenty-eight, and five is few enough that one new disclosure would visibly move it. The direction is still the argument. The column the industry has practised on is the largest in the record and absent from the subset that reaches the assets worth the most, and nothing about that gap is a patching problem.</figcaption>
+<figcaption>Both bars are drawn to the same width so the shapes can be compared, which flatters the lower one, since it rests on four entries against twenty-eight, and four is few enough that one new disclosure would visibly move it. The direction is still the argument. The column the industry has practised on is the largest in the record and absent from the subset that reaches the assets worth the most, and nothing about that gap is a patching problem.</figcaption>
 </figure>
 <div class="lesson"><span class="eyebrow">Key lesson</span><p>The record is a distribution across four fates, and the distribution is lopsided in a way that flatters the patch cycle. The fixable failures are visible and discussed, the unfixable ones are quiet and permanent. Read the shape, not the entries.</p></div>
 
@@ -710,6 +710,7 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 <select id="vecsel" aria-label="Filter by attack vector">
 <option value="">All vectors</option>
 <option value="Cache side channel">Cache / memory</option>
+<option value="Ciphertext side channel">Ciphertext</option>
 <option value="Speculative execution">Speculative</option>
 <option value="Microarch. state">Microarchitectural</option>
 <option value="Fault injection">Fault injection</option>
@@ -729,8 +730,8 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 The record below is rendered by script, so with scripts disabled the table is empty. Its shape, which is what the argument rests on:
 28 entries, of which 11 are patchable, 5 compensating, 8 architectural, and 4 root-of-trust breaks. The patchable column is the largest
 overall, and that is the point &mdash; it is dominated by the software-interface and speculative-execution bugs of the early years, the era
-the &ldquo;just patch it&rdquo; intuition was formed in. Now restrict to the five entries marked AI-relevant, the ones that extract model
-weights, inference inputs, or user prompts from a running workload: four are architectural and one is compensating. The patchable column
+the &ldquo;just patch it&rdquo; intuition was formed in. Now restrict to the four entries marked AI-relevant, the ones that extract model
+weights, inference inputs, or user prompts from a running workload: three are architectural and one is compensating. The patchable column
 is empty. The intuition and the workload have moved in opposite directions.
 </p>
 </noscript>
@@ -748,7 +749,7 @@ is empty. The intuition and the workload have moved in opposite directions.
 
 <h2 id="s9"><span class="snum">9</span>The rung AI runs on, and hasn&rsquo;t met yet</h2>
 <p>Put the ladder and the record together and the picture sharpens. &ldquo;Private AI&rdquo; is sold on the confidential-VM rung (the one that shares caches, buses, and the memory engine) while the conversation about its failures is stuck one rung lower, among the container-and-sandbox escapes. That is the mismatch this whole piece exists to name. The AI-isolation conversation is living almost entirely in the patchable column and has not yet met the other three. Container escapes, agent jailbreaks, tool-call breakouts, nearly all vector 7, nearly all genuinely patchable. That is a real treadmill, and the industry knows how to run it. The mistake is concluding from the treadmill that isolation for AI is fundamentally a patching problem.</p>
-<p>It stops being one the instant those workloads share silicon. Put an inference job on a GPU or CPU it shares with another tenant and the shared-resource side channels (the architectural column) come into scope, and nobody in the sandbox-escape discussion is talking about them yet. The three entries that carry this are the newest in the record, and none of them breaks any cryptography. <strong><a href="https://tdxray.cpusec.org/">TDXRay</a></strong> reconstructs a language model&rsquo;s user prompts word-for-word from inside an encrypted confidential VM, by watching at cache-line granularity which hash-map buckets the tokenizer walks. The data stays encrypted the whole time; the computation pattern leaks it. <strong><a href="https://dl.acm.org/doi/10.1145/3658644.3690317">HyperTheft</a></strong> and <strong><a href="https://ieeexplore.ieee.org/document/11023361/">CipherSteal</a></strong> do the same to the two assets an AI deployment most wants to protect, model weights and inference inputs, through a ciphertext side channel. All three are architectural. A patch can raise the cost or add mitigations, but none of them removes the underlying shared-resource leakage mechanism, because that mechanism is the shared silicon doing its job.</p>
+<p>It stops being one the instant those workloads share silicon. Put an inference job on a GPU or CPU it shares with another tenant and the shared-resource side channels (the architectural column) come into scope, and nobody in the sandbox-escape discussion is talking about them yet. The three entries that carry this are the newest in the record, and none of them breaks any cryptography. <strong><a href="https://tdxray.cpusec.org/">TDXRay</a></strong> reconstructs a language model&rsquo;s user prompts from inside an encrypted confidential VM, recovering them from a single memory access trace at better than ninety per cent similarity, by watching at cache-line granularity which hash-map buckets the tokenizer walks. The data stays encrypted the whole time; the computation pattern leaks it. <strong><a href="https://dl.acm.org/doi/10.1145/3658644.3690317">HyperTheft</a></strong> and <strong><a href="https://ieeexplore.ieee.org/document/11023361/">CipherSteal</a></strong> do the same to the two assets an AI deployment most wants to protect, model weights and inference inputs, through a ciphertext side channel. All three are architectural. A patch can raise the cost or add mitigations, but none of them removes the underlying shared-resource leakage mechanism, because that mechanism is the shared silicon doing its job.</p>
 
 <figure class="diagram" aria-label="The record over time: patchable findings dominate the early years while architectural and root-of-trust findings dominate the recent ones, and every AI-relevant entry falls in 2024 or later">
 <svg viewBox="0 0 900 400" role="img" xmlns="http://www.w3.org/2000/svg">
@@ -801,8 +802,8 @@ is empty. The intuition and the workload have moved in opposite directions.
 <circle cx="716.7" cy="220" r="8.7" fill="#AD4227" fill-opacity=".75"/>
 <text x="716.7" y="224" font-family="'Newsreader',Georgia,serif" font-size="11" font-weight="700" fill="#AD4227" text-anchor="middle">3</text>
 <circle cx="783.3" cy="220" r="12.0" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.4"/>
-<circle cx="783.3" cy="220" r="12.0" fill="#AD4227" fill-opacity=".75"/>
-<text x="783.3" y="224" font-family="'Newsreader',Georgia,serif" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+<circle cx="783.3" cy="220" r="8.5" fill="#AD4227" fill-opacity=".75"/>
+<text x="783.3" y="224" font-family="'Newsreader',Georgia,serif" font-size="11" font-weight="700" fill="#AD4227" text-anchor="middle">2</text>
 <circle cx="850.0" cy="220" r="9.0" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.4"/>
 <circle cx="850.0" cy="220" r="9.0" fill="#AD4227" fill-opacity=".75"/>
 <text x="228" y="286" font-family="'Source Serif 4',serif" font-size="11.5" font-weight="600" fill="#5B2A57" text-anchor="end">Root-of-trust</text>
@@ -1081,17 +1082,17 @@ const DATA = [
  {y:2022,n:"\u00c6PIC Leak",cve:"CVE-2022-21233",pf:"Intel SGX",v:"Microarch. state",rem:"patch",im:"Uninitialized APIC MMIO reads leak enclave data."},
  {y:2023,n:"Downfall (GDS)",cve:"CVE-2022-40982",pf:"Intel SGX",v:"Speculative execution",rem:"patch",im:"AVX gather instructions leak data across boundaries."},
  {y:2024,n:"TDXdown",cve:"",pf:"Intel TDX",v:"Microarch. state",rem:"arch",im:"Single-stepping and instruction counting against TDX."},
- {y:2025,n:"PortPrint",cve:"",pf:"Cross-platform",v:"Microarch. state",rem:"arch",im:"Port contention reveals code identity; SMT-disable doesn't help.",ai:1},
+ {y:2025,n:"PortPrint",cve:"",pf:"Cross-platform",v:"Microarch. state",rem:"arch",im:"Port contention reveals code identity; SMT-disable doesn't help."},
  {y:2025,n:"TEE.Fail",cve:"",pf:"Cross-platform",v:"Physical/bus interposition",rem:"root",im:"$1K DDR5 interposer extracts attestation keys from TDX and SEV-SNP."},
  {y:2026,n:"GWK Extraction",cve:"",pf:"Intel SGX",v:"Firmware",rem:"root",im:"Global Wrapping Key pulled from fuses; whole key hierarchy exposed. Unpatchable."},
- {y:2026,n:"TDXRay",cve:"",pf:"Intel TDX",v:"Cache side channel",rem:"arch",im:"Reconstructs LLM prompts word-for-word from encrypted TDX VMs.",ai:1},
+ {y:2026,n:"TDXRay",cve:"",pf:"Intel TDX",v:"Cache side channel",rem:"arch",im:"Reconstructs LLM prompts from encrypted TDX VMs at >90% similarity.",ai:1},
  {y:2018,n:"SEVered",cve:"",pf:"AMD SEV",v:"Software interface",rem:"patch",im:"Malicious hypervisor remaps guest pages to extract plaintext."},
  {y:2021,n:"CipherLeaks",cve:"",pf:"AMD SEV",v:"Cache side channel",rem:"arch",im:"Encrypted-memory access patterns leak via ciphertext."},
  {y:2023,n:"CacheWarp",cve:"CVE-2023-20592",pf:"AMD SEV",v:"Fault injection",rem:"patch",im:"INVD drops cache writes; hijacks control flow in SEV-SNP guests."},
  {y:2023,n:"Collide+Power",cve:"CVE-2023-20583",pf:"AMD SEV",v:"Microarch. state",rem:"arch",im:"Power side channel from data collisions in shared resources."},
  {y:2024,n:"WeSee",cve:"",pf:"AMD SEV",v:"Software interface",rem:"comp",im:"Malicious #VC interrupts break SEV-SNP confidentiality."},
- {y:2024,n:"HyperTheft",cve:"",pf:"AMD SEV",v:"Cache side channel",rem:"arch",im:"Extracts model weights from TEE-shielded neural nets.",ai:1},
- {y:2025,n:"CipherSteal",cve:"",pf:"AMD SEV",v:"Cache side channel",rem:"arch",im:"Extracts inference inputs from TEE-shielded neural nets.",ai:1},
+ {y:2024,n:"HyperTheft",cve:"",pf:"AMD SEV",v:"Ciphertext side channel",rem:"arch",im:"Extracts model weights from TEE-shielded neural nets.",ai:1},
+ {y:2025,n:"CipherSteal",cve:"",pf:"AMD SEV",v:"Ciphertext side channel",rem:"arch",im:"Extracts inference inputs from TEE-shielded neural nets.",ai:1},
  {y:2025,n:"Heracles",cve:"",pf:"AMD SEV",v:"Software interface",rem:"patch",im:"Chosen-plaintext oracle via AES-XEX tweak manipulation."},
  {y:2025,n:"RMPocalypse",cve:"CVE-2025-0033",pf:"AMD SEV",v:"Software interface",rem:"patch",im:"One 8-byte write corrupts the Reverse Map Table, voiding integrity."},
  {y:2025,n:"Malicious microcode",cve:"CVE-2024-56161",pf:"AMD SEV",v:"Firmware",rem:"root",im:"Insecure signature hash lets attacker load microcode under SEV-SNP."},
