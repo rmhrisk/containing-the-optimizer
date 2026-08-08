@@ -366,6 +366,29 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 </svg>
 <figcaption>The same two workloads, placed on three different rungs. What changes is not how strong the wall is but how much of the stack the neighbours hold in common, because every shared layer is a path between them. The container gives each workload its own view of the process table and the filesystem while one kernel sits under all of them. The VM gives each its own operating system and leaves only the hypervisor and the silicon in common. The enclave removes the shared processor as well, which is the step that finally puts the operator outside the boundary rather than inside it.</figcaption>
 </figure>
+<figure class="diagram" aria-label="All Linux kernel CVEs since 1997 drawn to scale against the number rated critical and the number confirmed exploited in the wild">
+<svg viewBox="0 0 900 242" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="900" height="242" fill="#FFFFFF"/>
+<text x="30" y="30" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">THAT SHARED KERNEL IS THE MOST COUNTED SURFACE IN COMPUTING. COUNTING IT SAYS LITTLE.</text>
+<text x="252.0" y="79" font-family="'Source Serif 4',serif" font-size="11.5" font-weight="600" fill="#14181C" text-anchor="end">All kernel CVEs since 1997</text>
+<text x="252.0" y="93" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="end">every identifier in the NVD</text>
+<rect x="268.0" y="64" width="588.0" height="26" fill="#E7F1EC" stroke="#2F7D5A" stroke-width="1.2"/>
+<text x="562.0" y="82" font-family="'Newsreader',Georgia,serif" font-size="15" font-weight="700" fill="#2F7D5A" text-anchor="middle">16,436</text>
+<text x="252.0" y="123" font-family="'Source Serif 4',serif" font-size="11.5" font-weight="600" fill="#14181C" text-anchor="end">Rated critical</text>
+<text x="252.0" y="137" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="end">2 per cent of them</text>
+<rect x="268.0" y="108" width="11.59" height="26" fill="#F6EEDC" stroke="#A8770A" stroke-width="1.2"/>
+<line x1="279.59" y1="121" x2="293.59" y2="121" stroke="#A8770A" stroke-width="1"/>
+<text x="299.59" y="125" font-family="'Newsreader',Georgia,serif" font-size="15" font-weight="700" fill="#A8770A">324</text>
+<text x="252.0" y="167" font-family="'Source Serif 4',serif" font-size="11.5" font-weight="600" fill="#14181C" text-anchor="end">Confirmed exploited in the wild</text>
+<text x="252.0" y="181" font-family="'IBM Plex Mono',monospace" font-size="7.5" fill="#5F646B" text-anchor="end">CISA KEV, all time</text>
+<rect x="268.0" y="152" width="1.2" height="26" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.2"/>
+<line x1="269.2" y1="165" x2="283.2" y2="165" stroke="#AD4227" stroke-width="1"/>
+<text x="289.2" y="169" font-family="'Newsreader',Georgia,serif" font-size="15" font-weight="700" fill="#AD4227">25</text>
+<line x1="30" y1="200" x2="870" y2="200" stroke="#DAD7CE" stroke-width="1"/>
+<text x="30" y="224" font-family="'Source Serif 4',serif" font-size="11.5" fill="#5F646B">Drawn to scale. The bottom bar is one pixel wide because that is how wide it is.</text>
+</svg>
+<figcaption>The kernel is the most heavily counted attack surface in computing, and counting it turns out to say very little. Volume tracks how much code is exposed and how diligently it is catalogued, not how often anyone gets in. Hold this next to the record in Part III, where the entries have no patch at all: a number you can watch go down every Tuesday is not the same thing as a number that measures your risk. Counts from the <a href="https://linuxcvetracker.com/cve-statistics/">NVD via LinuxCVETracker</a>, 1998 to date.</figcaption>
+</figure>
 <div class="lesson"><span class="eyebrow">Key lesson</span><p>The question that separates the rungs is a simple one: <em>what does it share?</em> A container shares the kernel; a VM shares only the hypervisor and the hardware. Sharing is surface, and surface is risk. &ldquo;Isolated&rdquo; without naming the rung is a claim with no threat model attached, which is to say, no claim at all.</p></div>
 
 <h2 id="s2"><span class="snum">2</span>Not all VMs are the same</h2>
@@ -674,9 +697,10 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 
 <div class="wide">
 <figure class="diagram" aria-label="The four remediability classes, from patchable to permanent">
-<svg viewBox="0 0 920 250" role="img" xmlns="http://www.w3.org/2000/svg">
-<rect width="920" height="250" fill="#FFFFFF"/>
-<g font-family="'Source Serif 4',serif">
+<svg viewBox="0 0 920 268" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="920" height="268" fill="#FFFFFF"/>
+<text x="30" y="26" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">NOT HOW BAD IT IS. WHAT IT WILL TAKE TO MAKE IT STOP.</text>
+<g font-family="'Source Serif 4',serif" transform="translate(0,32)">
 <rect x="30" y="40" width="200" height="150" rx="3" fill="#E7F1EC" stroke="#2F7D5A"/>
 <text x="46" y="66" font-size="13" font-weight="600" fill="#2F7D5A">Patchable</text>
 <text x="46" y="90" font-size="11.5" fill="#14181C">SDK, microcode, or</text>
@@ -706,10 +730,10 @@ html.js .lesson:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,2
 <text x="706" y="168" font-size="11" fill="#14181C">decommission the gen;</text>
 <text x="706" y="182" font-size="11" fill="#14181C">rotate sealed secrets</text>
 </g>
-<text x="30" y="222" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5F646B">MAINTENANCE WINDOW</text>
+<text x="30" y="254" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5F646B">MAINTENANCE WINDOW</text>
 <line x1="250" y1="218" x2="688" y2="218" stroke="#DAD7CE" stroke-width="1"/>
 <polygon points="688,218 678,213 678,223" fill="#DAD7CE"/>
-<text x="890" y="222" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5B2A57" text-anchor="end">CAPEX DECISION</text>
+<text x="890" y="254" font-family="'IBM Plex Mono',monospace" font-size="11" fill="#5B2A57" text-anchor="end">CAPEX DECISION</text>
 </svg>
 <figcaption>The four fates, named. Left to right, the response grows from something ops closes on a Tuesday to something that ends a hardware generation. The data loss can be identical across all four; what differs is the cost and shape of the response, which is exactly what a severity score omits.</figcaption>
 </figure>
@@ -1132,6 +1156,60 @@ So the AI-isolation world faces two problems stacked on top of each other. On to
 
 <h3>If you&rsquo;re building</h3>
 <p>Your job is different: the rung is necessary and it is not sufficient, and the part that actually contains an optimizer is the one the staircase does not draw, the design you wrap around whichever rung you chose. Pick the rung your real adversary demands (an optimizer on shared silicon protecting high-value data pushes you toward the top, and the cost of the top is giving up multi-tenancy). Then build the containment the rung does not give you for free: ephemeral state so nothing persists between tasks, no standing write to shared resources, credentials scoped and short-lived, egress bounded rather than &ldquo;controlled,&rdquo; and an agent reviewing behavior over time to surface patterns for human judgment. The rung sets your floor. The design is what keeps the optimizer on it. The scorecard above is how you check whether you have built the design or only bought the rung.</p>
+<figure class="diagram" aria-label="The procedure: three shared steps, locate the rung, name the adversary, find the fate, then a fork into three questions for buyers and five design properties for builders">
+<svg viewBox="0 0 900 404" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="900" height="404" fill="#FFFFFF"/>
+<text x="30" y="28" font-family="'IBM Plex Mono',monospace" font-size="12" letter-spacing="1.2" fill="#5F646B">THREE STEPS EVERYONE TAKES. THEN IT MATTERS WHICH SIDE OF THE DEAL YOU ARE ON.</text>
+<rect x="40" y="52" width="260" height="96" rx="2" fill="#FFFFFF" stroke="#33566B" stroke-width="1.3"/>
+<text x="54" y="74" font-family="'IBM Plex Mono',monospace" font-size="8" letter-spacing=".08em" fill="#33566B">STEP 1</text>
+<text x="54" y="96" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C">Locate the rung</text>
+<text x="54" y="114" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">container, VM, confidential VM,</text>
+<text x="54" y="128" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">or security processor. The mechanism,</text>
+<text x="54" y="142" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">not the marketing word.</text>
+<line x1="300" y1="100" x2="316" y2="100" stroke="#33566B" stroke-width="1.2"/>
+<polygon points="316,100 310,97 310,103" fill="#33566B"/>
+<rect x="320" y="52" width="260" height="96" rx="2" fill="#FFFFFF" stroke="#33566B" stroke-width="1.3"/>
+<text x="334" y="74" font-family="'IBM Plex Mono',monospace" font-size="8" letter-spacing=".08em" fill="#33566B">STEP 2</text>
+<text x="334" y="96" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C">Name the adversary</text>
+<text x="334" y="114" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">the one the rung was built for,</text>
+<text x="334" y="128" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">and the one you actually face.</text>
+<text x="334" y="142" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">If it outranks the rung, decorative.</text>
+<line x1="580" y1="100" x2="596" y2="100" stroke="#33566B" stroke-width="1.2"/>
+<polygon points="596,100 590,97 590,103" fill="#33566B"/>
+<rect x="600" y="52" width="260" height="96" rx="2" fill="#FFFFFF" stroke="#33566B" stroke-width="1.3"/>
+<text x="614" y="74" font-family="'IBM Plex Mono',monospace" font-size="8" letter-spacing=".08em" fill="#33566B">STEP 3</text>
+<text x="614" y="96" font-family="'Source Serif 4',serif" font-size="13" font-weight="600" fill="#14181C">Find the fate</text>
+<text x="614" y="114" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">interface bugs are patchable.</text>
+<text x="614" y="128" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">Shared silicon is architectural.</text>
+<text x="614" y="142" font-family="'Source Serif 4',serif" font-size="10.5" fill="#5F646B">Maintenance window, or fleet.</text>
+<line x1="470" y1="148" x2="470" y2="172" stroke="#DAD7CE" stroke-width="1.2"/>
+<line x1="235" y1="172" x2="705" y2="172" stroke="#DAD7CE" stroke-width="1.2"/>
+<line x1="235" y1="172" x2="235" y2="192" stroke="#DAD7CE" stroke-width="1.2"/>
+<polygon points="235,192 231,185 239,185" fill="#DAD7CE"/>
+<line x1="705" y1="172" x2="705" y2="192" stroke="#DAD7CE" stroke-width="1.2"/>
+<polygon points="705,192 701,185 709,185" fill="#DAD7CE"/>
+<text x="484" y="166" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#5F646B">only the last step forks</text>
+<rect x="40" y="196" width="390" height="150" rx="2" fill="#F6EEDC" stroke="#A8770A" stroke-width="1.3"/>
+<text x="58" y="220" font-family="'Source Serif 4',serif" font-size="13" font-weight="700" fill="#A8770A">If you&rsquo;re buying</text>
+<text x="58" y="236" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#5F646B">ask three questions, listen for flinching</text>
+<text x="58" y="262" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">Which primitive does my workload actually run on?</text>
+<text x="58" y="282" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">What does this boundary specifically not cover?</text>
+<text x="58" y="302" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">When it fails, is the fix a patch or a hardware generation?</text>
+<text x="58" y="330" font-family="'Source Serif 4',serif" font-size="10.5" font-style="italic" fill="#5F646B">Plain answers mean they are selling you a rung. Adjectives mean a pitch.</text>
+<rect x="470" y="196" width="390" height="150" rx="2" fill="#F6E5E0" stroke="#AD4227" stroke-width="1.3"/>
+<text x="488" y="220" font-family="'Source Serif 4',serif" font-size="13" font-weight="700" fill="#AD4227">If you&rsquo;re building</text>
+<text x="488" y="236" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#5F646B">the rung is the floor, not the containment</text>
+<text x="488" y="258" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">Ephemeral state, nothing persists between tasks</text>
+<text x="488" y="275" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">No standing write to shared resources</text>
+<text x="488" y="292" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">Credentials scoped and short-lived</text>
+<text x="488" y="309" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">Egress bounded, not &ldquo;controlled&rdquo;</text>
+<text x="488" y="326" font-family="'Source Serif 4',serif" font-size="11" fill="#14181C">An agent reviewing behaviour over time</text>
+<line x1="30" y1="366" x2="870" y2="366" stroke="#DAD7CE" stroke-width="1"/>
+<text x="30" y="388" font-family="'Source Serif 4',serif" font-size="11.5" fill="#5F646B">The rung sets your floor. The design is what keeps the optimizer on it.</text>
+</svg>
+<figcaption>Everything above the fork is the same work whichever side you are on, and it is the whole piece compressed into three questions you can ask about a system in front of you. The fork is only about what you do with the answers. A buyer is trying to find out which rung is really underneath a sentence; a builder already knows and has to supply the part the rung was never going to provide.</figcaption>
+</figure>
+
 <div class="lesson"><span class="eyebrow">Key lesson</span><p>Buying or building, the first three steps are the same: locate the rung, name the adversary, find the fate. Only the last step forks. The buyer makes the vendor name the rung and its gaps; the builder wraps that rung in the design that contains the optimizer. Neither can start until &ldquo;isolation&rdquo; is resolved into a mechanism, the one thing the marketing prevents.</p></div>
 <p class="closer">So here is the whole piece in one move. We have been asking how strong the sandbox is, and that is an incomplete unit of analysis. The strength of the wall is one number among several, and rarely the one that decides the outcome. Two questions decide more, and they are the two this piece has been building: which failures are patchable and which are properties of the architecture, because that sets what a fix actually costs; and, separately, which capabilities you deliberately cut through the wall to do useful work, because the wall is only ever half the story. Containment lives in the architecture that governs those capabilities, mediates the openings, and reasons about what the permitted actions add up to over time. Ask that of any &ldquo;secure AI&rdquo; claim, of any deployment you are about to ship, and the friendly word stops hiding anything. That is the entire use of the model. It tells you what you are actually holding.</p>
 
